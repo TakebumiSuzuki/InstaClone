@@ -7,6 +7,7 @@
 
 import UIKit
 import JGProgressHUD
+import Firebase
 
 //MARK: - UIViewControllerの機能拡張。1.hud付け替え機能 2.gradient layer 3.簡単なalertの表示機能をつける。
 extension UIViewController {
@@ -35,6 +36,33 @@ extension UIViewController {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
         present(alert, animated: true, completion: nil)
+    }
+    
+    func showSimpleAlert(title: String, message: String, actionTitle: String){
+        
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        let action = UIAlertAction(title: actionTitle, style: .default, handler: nil)
+        alert.addAction(action)
+        present(alert, animated: true, completion: nil)
+    }
+}
+
+extension UITextField {
+    func disableAutoFill() {
+        if #available(iOS 12, *) {
+            textContentType = .oneTimeCode
+        } else {
+            textContentType = .init(rawValue: "")
+        }
+    }
+}
+
+extension String{
+    
+    func isValidEmail() -> Bool {
+        let emailRegEx = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        let emailPred = NSPredicate(format:"SELF MATCHES %@", emailRegEx)
+        return emailPred.evaluate(with: self)
     }
 }
 
@@ -144,3 +172,5 @@ extension UIView {
                bottom: view.bottomAnchor, right: view.rightAnchor)
     }
 }
+
+

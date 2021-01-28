@@ -9,7 +9,7 @@ import UIKit
 
 //以下の2つのprotocolはどちらも必須ではないとの事。学習のために。慣れないうちは余計に読みづらく複雑になる。
 protocol FormViewModel {
-    func updateForm()
+    func updateButtonColor()
 }
 protocol AuthenticationViewModel {
     var formIsValid: Bool { get }
@@ -47,6 +47,8 @@ struct RegistrationViewModel: AuthenticationViewModel {
     var formIsValid: Bool {
         return email?.isEmpty == false && password?.isEmpty == false
             && fullname?.isEmpty == false && username?.isEmpty == false
+            && fullname!.count >= 2 && fullname!.count <= 20
+            && username!.count >= 2 && username!.count <= 20
     }
     
     var buttonBackgroundColor: UIColor {

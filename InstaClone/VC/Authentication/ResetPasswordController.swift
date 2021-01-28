@@ -20,28 +20,29 @@ class ResetPasswordController: UIViewController {
     weak var delegate: ResetPasswordControllerDelegate?  //loginControllereが批准
     var email: String?  //前ページから引き継がれる
     
-    private let emailTextField = CustomTextField(placeholder: "Email")
-    
-    private let iconImage: UIImageView = {
-        let iv = UIImageView(image: #imageLiteral(resourceName: "Instagram_logo_white"))
-        iv.contentMode = .scaleAspectFill
+    private let iconImageView: UIImageView = {
+        let iv = UIImageView(image: #imageLiteral(resourceName: "Logo"))
+        iv.contentMode = .scaleAspectFit
         return iv
     }()
     
-    private let resetPasswordButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setTitle("Reset Password", for: .normal)
-        button.setTitleColor(.white, for: .normal)
-        button.backgroundColor = #colorLiteral(red: 0.5568627715, green: 0.3529411852, blue: 0.9686274529, alpha: 1).withAlphaComponent(0.5)
-        button.layer.cornerRadius = 5
-        button.setHeight(50)
-        button.titleLabel?.font = UIFont.boldSystemFont(ofSize: 20)
-        button.isEnabled = false
+    private let emailTextField: CustomTextField = {
+        let tf = CustomTextField(placeholder: "Email")
+        tf.textContentType = .emailAddress
+        tf.keyboardType = .emailAddress
+        tf.autocapitalizationType = .none
+        tf.returnKeyType = .done
+        return tf
+    }()
+    
+    private lazy var resetPasswordButton: CustomButton = {
+        let button = CustomButton(type: .system)
+        button.setUp(title: "Reset Password")
         button.addTarget(self, action: #selector(handleResetPassword), for: .touchUpInside)
         return button
     }()
     
-    private let backButton: UIButton = {
+    private lazy var backButton: UIButton = {
         let button = UIButton(type: .system)
         button.tintColor = .white
         button.setImage(UIImage(systemName: "chevron.left"), for: .normal)
@@ -55,19 +56,63 @@ class ResetPasswordController: UIViewController {
         configureUI()
     }
     
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        view.endEditing(true)
+    }
+    
+    deinit {
+        print("Debug: Password Controller being deinit")
+    }
+    
+    // MARK: - Helpers
+    
+    func configureUI() {
+        
+        configureGradientLayer()
+        
+        emailTextField.text = email //ここからの３行は前ページから引き継いだemailをそのまま表示させるため
+        viewModel.email = email
+        updateButtonColor()
+        
+        emailTextField.delegate = self
+        emailTextField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
+        
+        view.addSubview(backButton)
+        backButton.anchor(top: view.safeAreaLayoutGuide.topAnchor, left: view.leftAnchor,
+                          paddingTop: 16, paddingLeft: 16)
+        
+        view.addSubview(iconImageView)
+        iconImageView.centerX(inView: view)
+        iconImageView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.5).isActive = true
+        iconImageView.setHeight(80)
+        iconImageView.anchor(top: view.safeAreaLayoutGuide.topAnchor, paddingTop: 32)
+        
+        let stack = UIStackView(arrangedSubviews: [emailTextField, resetPasswordButton])
+        stack.axis = .vertical
+        stack.spacing = 20
+        
+        view.addSubview(stack)
+        stack.anchor(top: iconImageView.bottomAnchor, left: view.leftAnchor,
+                     right: view.rightAnchor, paddingTop: 32, paddingLeft: 32, paddingRight: 32)
+    }
+    
+    
     // MARK: - Actions
     
     @objc func handleResetPassword() {
         guard let email = emailTextField.text else { return }
+        guard email.isValidEmail() else{
+            showSimpleAlert(title: "Email isn't in correct format.", message: "", actionTitle: "ok")
+            return
+        }
         
         showLoader(true)
         AuthService.resetPassword(withEmail: email) { error in
             if let error = error {
-                self.showMessage(withTitle: "Error", message: error.localizedDescription)
                 self.showLoader(false)
+                self.showSimpleAlert(title: "Error", message: error.localizedDescription, actionTitle: "ok")
                 return
             }
-            
             self.delegate?.controllerDidSendResetPasswordLink(self)
         }
     }
@@ -80,38 +125,7 @@ class ResetPasswordController: UIViewController {
         if sender == emailTextField {
             viewModel.email = sender.text
         }
-        updateForm()
-    }
-    
-    
-    // MARK: - Helpers
-    
-    func configureUI() {
-        
-        configureGradientLayer()
-        
-        emailTextField.text = email //ここからの３行は前ページから引き継いだemailをそのまま表示させるため
-        viewModel.email = email
-        updateForm()
-        
-        emailTextField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
-        
-        view.addSubview(backButton)
-        backButton.anchor(top: view.safeAreaLayoutGuide.topAnchor, left: view.leftAnchor,
-                          paddingTop: 16, paddingLeft: 16)
-        
-        view.addSubview(iconImage)
-        iconImage.centerX(inView: view)
-        iconImage.setDimensions(height: 80, width: 120)
-        iconImage.anchor(top: view.safeAreaLayoutGuide.topAnchor, paddingTop: 32)
-        
-        let stack = UIStackView(arrangedSubviews: [emailTextField, resetPasswordButton])
-        stack.axis = .vertical
-        stack.spacing = 20
-        
-        view.addSubview(stack)
-        stack.anchor(top: iconImage.bottomAnchor, left: view.leftAnchor,
-                     right: view.rightAnchor, paddingTop: 32, paddingLeft: 32, paddingRight: 32)
+        updateButtonColor()
     }
 }
 
@@ -119,9 +133,20 @@ class ResetPasswordController: UIViewController {
 
 extension ResetPasswordController: FormViewModel {
     
-    func updateForm() {
+    func updateButtonColor() {
         resetPasswordButton.backgroundColor = viewModel.buttonBackgroundColor
         resetPasswordButton.setTitleColor(viewModel.buttonTitleColor, for: .normal)
         resetPasswordButton.isEnabled = viewModel.formIsValid
+    }
+}
+
+//MARK: - UITextFieldDelegate
+extension ResetPasswordController: UITextFieldDelegate{
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        if textField == emailTextField {
+            view.endEditing(true)
+        }
+        return true
     }
 }

@@ -19,46 +19,47 @@ class LoginController: UIViewController {
     private var viewModel = LoginViewModel()
     weak var delegate: AuthenticationDelegate?  //ログイン成功した後に画面を閉じさせるためのプロトコル
     
-    private let iconImage: UIImageView = {
-        let iv = UIImageView(image: #imageLiteral(resourceName: "Instagram_logo_white"))
-        iv.contentMode = .scaleAspectFill
+    private let iconImageView: UIImageView = {
+        let iv = UIImageView(image: #imageLiteral(resourceName: "Logo"))
+        iv.contentMode = .scaleAspectFit
         return iv
     }()
     
     private let emailTextField: CustomTextField = {
         let tf = CustomTextField(placeholder: "Email")
+        tf.textContentType = .emailAddress
         tf.keyboardType = .emailAddress
+        tf.autocapitalizationType = .none
+        tf.returnKeyType = .next
         return tf
     }()
     
     private let passwordTextField: UITextField = {
         let tf = CustomTextField(placeholder: "Password")
+        tf.textContentType = .password
         tf.isSecureTextEntry = true
+        tf.disableAutoFill()
+        tf.returnKeyType = .done
         return tf
     }()
     
-    private let loginButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setTitle("Log In", for: .normal)
-        button.setTitleColor(.white, for: .normal)
-        button.backgroundColor = #colorLiteral(red: 0.5568627715, green: 0.3529411852, blue: 0.9686274529, alpha: 1).withAlphaComponent(0.5)
-        button.layer.cornerRadius = 5
-        button.setHeight(50)
-        button.titleLabel?.font = UIFont.boldSystemFont(ofSize: 20)
-        button.isEnabled = false
+    private lazy var loginButton: CustomButton = {
+        let button = CustomButton(type: .system)
+        button.setUp(title: "Log In")
         button.addTarget(self, action: #selector(handleLogin), for: .touchUpInside)
         return button
     }()
-    
-    private let forgotPasswordButton: UIButton = {
+        
+    private lazy var forgotPasswordButton: UIButton = {
         let button = UIButton(type: .system)
         //attributedTitleはExtensions.swift内で機能拡張している
         button.attributedTitle(firstPart: "Forgot your password?", secondPart: "Get help signing in.")
+        button.titleLabel?.adjustsFontSizeToFitWidth = true
         button.addTarget(self, action: #selector(handleShowResetPassword), for: .touchUpInside)
         return button
     }()
     
-    private let dontHaveAccountButton: UIButton = {
+    private lazy var dontHaveAccountButton: UIButton = {
         let button = UIButton(type: .system)
         button.attributedTitle(firstPart: "Don't have an account?", secondPart: "Sign Up")
         button.addTarget(self, action: #selector(handleShowSignUp), for: .touchUpInside)
@@ -70,62 +71,31 @@ class LoginController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configureUI()
-        configureNotificationObservers()   //UIControlクラスのaddTarget Method
+        configureTextFields()     //UIControlクラスのaddTarget Method
     }
     
-    // MARK: - Actions
-    
-    @objc func handleLogin() {
-        guard let email = emailTextField.text else { return }
-        guard let password = passwordTextField.text else { return }
-        
-        AuthService.logUserIn(withEmail: email, password: password) { (result, error) in
-            if let error = error {
-                print("DEBUG: Failed to log user in \(error.localizedDescription)")
-                return
-            }
-            
-            self.delegate?.authenticationDidComplete()
-        }
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.view.endEditing(true)
     }
     
-    @objc func handleShowResetPassword() {
-        let controller = ResetPasswordController()
-        controller.delegate = self  //一番下のdelegate methodの為の設定。ResetPassControllerをpopしてalert表示する。
-        controller.email = emailTextField.text   //リセットページに遷移してもここに入力済みのemailがそのまま表示されるように
-        navigationController?.pushViewController(controller, animated: true)
+    deinit {
+        print("Debug: Login Controller being deinit")
     }
-    
-    @objc func handleShowSignUp() {
-        let controller = RegistrationController()
-        controller.delegate = delegate  //RegistrationControllerから自分をまたいでMainTabController上で実行される為
-        navigationController?.pushViewController(controller, animated: true)
-    }
-    
-    //トリッキーなロジック。viewModel側で、emailとpasswordが両方共に空でなければ色とisEnabldが変わるような仕組みを作っている。
-    @objc func textDidChange(sender: UITextField) {
-        if sender == emailTextField {
-            viewModel.email = sender.text
-        } else {
-            viewModel.password = sender.text
-        }
-        
-        updateForm()
-    }
-    
     
     // MARK: - Helpers
     
     func configureUI() {
         
         configureGradientLayer()    //viewControllerのextension
+        
         navigationController?.navigationBar.isHidden = true
         navigationController?.navigationBar.barStyle = .black  //これを書くとstatus barが白字になる
         
-        view.addSubview(iconImage)
-        iconImage.centerX(inView: view)
-        iconImage.setDimensions(height: 80, width: 120)
-        iconImage.anchor(top: view.safeAreaLayoutGuide.topAnchor, paddingTop: 32)
+        view.addSubview(iconImageView)
+        iconImageView.centerX(inView: view)
+        iconImageView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.5).isActive = true
+        iconImageView.setHeight(80)
+        iconImageView.anchor(top: view.safeAreaLayoutGuide.topAnchor, paddingTop: 32)
         
         let stack = UIStackView(arrangedSubviews: [emailTextField, passwordTextField,
                                                    loginButton, forgotPasswordButton])
@@ -133,35 +103,98 @@ class LoginController: UIViewController {
         stack.spacing = 20
         
         view.addSubview(stack)
-        stack.anchor(top: iconImage.bottomAnchor, left: view.leftAnchor,
+        stack.anchor(top: iconImageView.bottomAnchor, left: view.leftAnchor,
                      right: view.rightAnchor, paddingTop: 32, paddingLeft: 32, paddingRight: 32)
         
         view.addSubview(dontHaveAccountButton)
         dontHaveAccountButton.centerX(inView: view)
-        dontHaveAccountButton.anchor(bottom: view.safeAreaLayoutGuide.bottomAnchor)
+        dontHaveAccountButton.anchor(bottom: view.safeAreaLayoutGuide.bottomAnchor, paddingBottom: 30)
     }
     
-    func configureNotificationObservers() {  //それぞれの行をprivate letのコンストラクタの中に入れても動く
+    func configureTextFields() {  //それぞれの行をprivate letのコンストラクタの中に入れても動く
+        emailTextField.delegate = self
+        passwordTextField.delegate = self
         emailTextField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
         passwordTextField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
+    }
+    
+    
+    // MARK: - Actions
+    
+    @objc func handleLogin() {
+        guard let email = emailTextField.text else { return }
+        guard let password = passwordTextField.text else { return }
+        guard email.isValidEmail() else{
+            showSimpleAlert(title: "Email isn't in correct format.", message: "", actionTitle: "ok")
+            return
+        }
+        
+        showLoader(true)
+        AuthService.logUserIn(withEmail: email, password: password) { (result, error) in
+            if let error = error {
+                print("DEBUG: Failed to log user in \(error.localizedDescription)")
+                self.showSimpleAlert(title: "", message: error.localizedDescription, actionTitle: "ok")
+                self.showLoader(false)
+                return
+            }
+            self.delegate?.authenticationDidComplete()
+        }
+    }
+    
+    @objc func handleShowResetPassword() {
+        let vc = ResetPasswordController()
+        vc.delegate = self  //一番下のdelegate methodの為の設定。ResetPassControllerをpopしてalert表示する。
+        vc.email = emailTextField.text   //リセットページに遷移してもここに入力済みのemailがそのまま表示されるように
+        navigationController?.pushViewController(vc, animated: true)
+    }
+    
+    @objc func handleShowSignUp() {
+        let vc = RegistrationController()
+        vc.delegate = delegate  //RegistrationControllerから自分をまたいでMainTabController上で実行される為
+        navigationController?.pushViewController(vc, animated: true)
+    }
+    
+    //viewModel側で、emailとpasswordが両方共に空でなければ色とisEnabldが変わるような仕組みを作っている。
+    @objc func textDidChange(sender: UITextField) {
+        if sender == emailTextField {
+            viewModel.email = sender.text
+        } else {
+            viewModel.password = sender.text
+        }
+        updateButtonColor()
     }
 }
 
 // MARK: - FormViewModel
 
-extension LoginController: FormViewModel {  //viewModelからのプロトコルだが不明。なくても良いのでは?
+extension LoginController: FormViewModel {  //viewModelからのプロトコルだが不明。なくても良い。
     
-    func updateForm() {
+    func updateButtonColor() {
         loginButton.backgroundColor = viewModel.buttonBackgroundColor
         loginButton.setTitleColor(viewModel.buttonTitleColor, for: .normal)
         loginButton.isEnabled = viewModel.formIsValid
     }
 }
 
+
+//MARK: - UITextFieldDelegate
+
+extension LoginController: UITextFieldDelegate{
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        if textField == emailTextField{
+            passwordTextField.becomeFirstResponder()
+        }else{
+            passwordTextField.resignFirstResponder()
+        }
+        return true
+    }
+}
+
 // MARK: - ResetPasswordControllerDelegate
 
-extension LoginController: ResetPasswordControllerDelegate {
-    //パスワードリセットのページからのdelegateメソッド
+extension LoginController: ResetPasswordControllerDelegate {  //パスワードリセットのページからのdelegateメソッド
+    
     func controllerDidSendResetPasswordLink(_ controller: ResetPasswordController) {
         navigationController?.popViewController(animated: true)
         showMessage(withTitle: "Success",

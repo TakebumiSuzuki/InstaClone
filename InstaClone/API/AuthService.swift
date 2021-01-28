@@ -9,7 +9,9 @@
 import UIKit
 import Firebase
 
-struct AuthCredentials {   //これは必須ではないと言っていた。確かにユーザー情報を保存する前にわざわざstructに変換する必要はない。
+
+//本来これは必須ではない。ユーザー情報を保存する前にわざわざこのstructに変換する手続きを踏む必要はない。
+struct AuthCredentials {
     let email: String
     let password: String
     let fullname: String
@@ -19,38 +21,48 @@ struct AuthCredentials {   //これは必須ではないと言っていた。確
 
 struct AuthService {
     
-    ///emailとpasswordを引数にログイン。AuthのsignInメソッドのcompletionをそのままcompletionにして引き継ぐ。AuthDataResultCallback型については不明。
+    //AuthDataResultCallback型については不明。
     static func logUserIn(withEmail email: String, password: String, completion: AuthDataResultCallback?) {
         Auth.auth().signIn(withEmail: email, password: password, completion: completion)
     }
     
-    ///カスタムで作ったcredentialsオブジェクトを引数に、UIImageをstoreに保存、Authでアカウントを作成、その他の情報をfirestoreのusersコレクションに保存。
+    
+    ///UIImageをstoreに保存、Authでアカウントを作成、その他の情報をFirestoreに保存。
     static func registerUser(withCredential credentials: AuthCredentials, completion: @escaping(Error?) -> Void) {
         
-        ImageUploader.uploadImage(image: credentials.profileImage) { imageUrl in
+        ImageUploader.uploadImage(image: credentials.profileImage) { result in
             
-            Auth.auth().createUser(withEmail: credentials.email, password: credentials.password) { (result, error) in
-                if let error = error {
-                    print("DEBUG: Failed to register user \(error.localizedDescription)")
-                    return
+            switch result{
+            case .failure(let error):
+                completion(error)
+                
+            case .success(let imageUrl):
+                Auth.auth().createUser(withEmail: credentials.email, password: credentials.password) { (result, error) in
+                    if let error = error {
+                        print("DEBUG: Failed to register user \(error.localizedDescription)")
+                        completion(error)
+                        return
+                    }
+                    
+                    guard let uid = result?.user.uid else {
+                        completion(CustomError.dataHandling)
+                        return
+                    }
+                    let data: [String: Any] = ["email": credentials.email,
+                                               "fullname": credentials.fullname,
+                                               "profileImageUrl": imageUrl,
+                                               "uid": uid,
+                                               "username": credentials.username]
+                    
+//                    if let fcmToken = Messaging.messaging().fcmToken {
+//                        data["fcmToken"] = fcmToken
+//                    }
+                    COLLECTION_USERS.document(uid).setData(data, completion: completion)
                 }
-                
-                guard let uid = result?.user.uid else { return }
-                
-                var data: [String: Any] = ["email": credentials.email,
-                                           "fullname": credentials.fullname,
-                                           "profileImageUrl": imageUrl,
-                                           "uid": uid,
-                                           "username": credentials.username]
-                
-                if let fcmToken = Messaging.messaging().fcmToken {
-                    data["fcmToken"] = fcmToken
-                }
-                
-                COLLECTION_USERS.document(uid).setData(data, completion: completion)
             }
         }
     }
+    
     
     ///emailを引数に、authのsendPasswordResetメソッドでリセットをかける。そこでのcompletionをそのまま引き継ぐ
     static func resetPassword(withEmail email: String, completion: SendPasswordResetCallback?) {

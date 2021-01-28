@@ -121,25 +121,34 @@ struct UserService {
         
         Storage.storage().reference(forURL: user.profileImageUrl).delete(completion: nil)
                 
-        ImageUploader.uploadImage(image: image) { profileImageUrl in
-            let data = ["profileImageUrl": profileImageUrl]
+        ImageUploader.uploadImage(image: image) { result in
+            switch result{
+            case .failure(let error):
+                print(error.localizedDescription)
+                return
+                
+            case .success(let profileImageUrl):
+                let data = ["profileImageUrl": profileImageUrl]
+                
+                COLLECTION_USERS.document(uid).updateData(data) { error in
+                    if let error = error {
+                        completion(nil, error)
+                        return
+                    }
+                    //過去のポストに含まれるprofilrImageUrlをfor loopを使って全て更新。
+                    COLLECTION_POSTS.whereField("ownerUid", isEqualTo: user.uid).getDocuments { snapshot, error in
+                        guard let documents = snapshot?.documents else { return }
+                        let data = ["ownerImageUrl": profileImageUrl]
+                        documents.forEach({ COLLECTION_POSTS.document($0.documentID).updateData(data) })
+                    }
+                    
+                    // need to update profile image url in comments and messages
+                    
+                    completion(profileImageUrl, nil)
+                }
             
-            COLLECTION_USERS.document(uid).updateData(data) { error in
-                if let error = error {
-                    completion(nil, error)
-                    return
-                }
-                //過去のポストに含まれるprofilrImageUrlをfor loopを使って全て更新。
-                COLLECTION_POSTS.whereField("ownerUid", isEqualTo: user.uid).getDocuments { snapshot, error in
-                    guard let documents = snapshot?.documents else { return }
-                    let data = ["ownerImageUrl": profileImageUrl]
-                    documents.forEach({ COLLECTION_POSTS.document($0.documentID).updateData(data) })
-                }
-                
-                // need to update profile image url in comments and messages
-                
-                completion(profileImageUrl, nil)
             }
+            
         }
     }
     
