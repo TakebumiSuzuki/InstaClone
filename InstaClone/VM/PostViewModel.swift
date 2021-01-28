@@ -5,6 +5,7 @@
 //  Created by TAKEBUMI SUZUKI on 1/27/21.
 //
 
+//ProfileControllerのページの下部でもこのVMは使われている。
 //Postモデルで定義されているpostID変数はここでは使われていない。
 import UIKit
 import ActiveLabel

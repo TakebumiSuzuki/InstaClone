@@ -7,10 +7,7 @@
 
 import UIKit
 
-//以下の2つのprotocolはどちらも必須ではないとの事。学習のために。慣れないうちは余計に読みづらく複雑になる。
-protocol FormViewModel {
-    func updateButtonColor()
-}
+//必須ではない。
 protocol AuthenticationViewModel {
     var formIsValid: Bool { get }
     var buttonBackgroundColor: UIColor { get }

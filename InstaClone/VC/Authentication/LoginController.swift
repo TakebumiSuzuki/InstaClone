@@ -84,7 +84,7 @@ class LoginController: UIViewController {
     
     // MARK: - Helpers
     
-    func configureUI() {
+    private func configureUI() {
         
         configureGradientLayer()    //viewControllerのextension
         
@@ -111,7 +111,7 @@ class LoginController: UIViewController {
         dontHaveAccountButton.anchor(bottom: view.safeAreaLayoutGuide.bottomAnchor, paddingBottom: 30)
     }
     
-    func configureTextFields() {  //それぞれの行をprivate letのコンストラクタの中に入れても動く
+    private func configureTextFields() {  //それぞれの行をprivate letのコンストラクタの中に入れても動く
         emailTextField.delegate = self
         passwordTextField.delegate = self
         emailTextField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
@@ -163,13 +163,8 @@ class LoginController: UIViewController {
         }
         updateButtonColor()
     }
-}
-
-// MARK: - FormViewModel
-
-extension LoginController: FormViewModel {  //viewModelからのプロトコルだが不明。なくても良い。
     
-    func updateButtonColor() {
+    private func updateButtonColor() {
         loginButton.backgroundColor = viewModel.buttonBackgroundColor
         loginButton.setTitleColor(viewModel.buttonTitleColor, for: .normal)
         loginButton.isEnabled = viewModel.formIsValid

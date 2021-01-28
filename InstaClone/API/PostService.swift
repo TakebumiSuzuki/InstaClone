@@ -16,18 +16,25 @@ struct PostService {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         
         //下の辞書の中に保存すべきpostID情報が入ってないがこれはローカルのみで扱う。hashTagはどうなってる?
-        ImageUploader.uploadImage(image: image) { imageUrl in
-            let data = ["caption": caption,
-                        "timestamp": Timestamp(date: Date()),
-                        "likes": 0,
-                        "imageUrl": imageUrl,
-                        "ownerUid": uid,
-                        "ownerImageUrl": user.profileImageUrl,
-                        "ownerUsername": user.username] as [String : Any]
-                        
-            COLLECTION_POSTS.addDocument(data: data, completion: completion)
+        ImageUploader.uploadImage(image: image, imageKind: .feedImage) { (result) in
+            switch result{
+            case .failure(let error):
+                return
+            case .success(let imageUrl):
+                let data = ["caption": caption,
+                            "timestamp": Timestamp(date: Date()),
+                            "likes": 0,
+                            "imageUrl": imageUrl,
+                            "ownerUid": uid,
+                            "ownerImageUrl": user.profileImageUrl,
+                            "ownerUsername": user.username] as [String : Any]
+                            
+                COLLECTION_POSTS.addDocument(data: data, completion: completion)
+            
+            }
         }
     }
+    
     
     static func fetchPosts(completion: @escaping([Post]) -> Void) {
         COLLECTION_POSTS.order(by: "timestamp", descending: true).getDocuments { (snapshot, error) in
@@ -38,6 +45,7 @@ struct PostService {
         }
     }
     
+    //ProfileController下部のpost欄からPaginateion必要かと。-----------------------------------------------------------------------
     static func fetchPosts(forUser uid: String, completion: @escaping([Post]) -> Void) {
         let query = COLLECTION_POSTS.whereField("ownerUid", isEqualTo: uid)
         

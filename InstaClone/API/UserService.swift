@@ -12,7 +12,7 @@ typealias FirestoreCompletion = (Error?) -> Void
 
 struct UserService {
     
-    ///uid → comp(user)
+    ///uid → comp(user)  profileControllerから-------------------------------------------------------------------------------------------------
     static func fetchUser(withUid uid: String, completion: @escaping(User) -> Void) {
         
         COLLECTION_USERS.document(uid).getDocument { snapshot, error in
@@ -90,8 +90,8 @@ struct UserService {
         }
     }
     
-    ///プロフィールページのuid → currentUIDがfollowしてるかどうかのBool
-    static func checkIfUserIsFollowed(uid: String, completion: @escaping(Bool) -> Void) {
+    ///プロフィールページのuid → currentUIDがfollowしてるかどうかのBool--------------------------------------------------------------------------------------
+    static func checkIfUserIsFollowed(uid: String, completion: @escaping (Bool) -> Void) {
         guard let currentUid = Auth.auth().currentUser?.uid else { return }
         
         COLLECTION_FOLLOWING.document(currentUid).collection("user-following").document(uid).getDocument { (snapshot, error) in
@@ -99,21 +99,37 @@ struct UserService {
             completion(isFollowed)
         }
     }
-    
-    static func fetchUserStats(uid: String, completion: @escaping(UserStats) -> Void) {
+    //--------------------------------------------------------------------------------------
+    static func fetchUserStats(uid: String, completion: @escaping (UserStats) -> Void) {
+        
+        var followers = 0
+        var following = 0
+        var posts = 0
+        
+        let group = DispatchGroup()
+        //各APIアクセスのerrorをハンドルする必要はない。errorになってもUI上では初期値０のままで表示し続ければ良いので。
+        group.enter()
         COLLECTION_FOLLOWERS.document(uid).collection("user-followers").getDocuments { (snapshot, _) in
-            let followers = snapshot?.documents.count ?? 0
-            
-            COLLECTION_FOLLOWING.document(uid).collection("user-following").getDocuments { (snapshot, _) in
-                let following = snapshot?.documents.count ?? 0
-                
-                COLLECTION_POSTS.whereField("ownerUid", isEqualTo: uid).getDocuments { (snapshot, _) in
-                    let posts = snapshot?.documents.count ?? 0
-                    
-                    completion(UserStats(followers: followers, following: following, posts: posts))
-                }
-            }
+            followers = snapshot?.documents.count ?? 0
+            group.leave()
         }
+        
+        group.enter()
+        COLLECTION_FOLLOWING.document(uid).collection("user-following").getDocuments { (snapshot, _) in
+            following = snapshot?.documents.count ?? 0
+            group.leave()
+        }
+        
+        group.enter()
+        COLLECTION_POSTS.whereField("ownerUid", isEqualTo: uid).getDocuments { (snapshot, _) in
+            posts = snapshot?.documents.count ?? 0
+            group.leave()
+        }
+        
+        group.notify(queue: .main) {
+            completion(UserStats(followers: followers, following: following, posts: posts))
+        }
+        
     }
     
     static func updateProfileImage(forUser user: User, image: UIImage, completion: @escaping(String?, Error?) -> Void) {
@@ -121,7 +137,8 @@ struct UserService {
         
         Storage.storage().reference(forURL: user.profileImageUrl).delete(completion: nil)
                 
-        ImageUploader.uploadImage(image: image) { result in
+        ImageUploader.uploadImage(image: image, imageKind: .profileImage) { (result) in
+            
             switch result{
             case .failure(let error):
                 print(error.localizedDescription)

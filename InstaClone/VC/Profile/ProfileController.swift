@@ -14,7 +14,7 @@ private let headerIdentifier = "ProfileHeader"
 //このページは様々なページへとリンクしているので複雑になる。
 //画面上半分のheaderViewを表示させるため、ProfileHeaderViewModelを作り、自分がdelegateになる。
 //画面半分下のポストをタップすると、その単体のポストでFeedControllerをpush。各ポストのcellに対してPostViewModelを作る。
-
+//headerViewにはProfileHeaerVMとProfileHeaderViewが、cellにはProfileCellとPostVMが使われている。
 
 class ProfileController: UICollectionViewController {
     
@@ -53,7 +53,7 @@ class ProfileController: UICollectionViewController {
     
     // MARK: - Helpers
     
-    func configureCollectionView() {
+    private func configureCollectionView() {
         navigationItem.title = user.username
         collectionView.backgroundColor = .white
         collectionView.register(ProfileCell.self, forCellWithReuseIdentifier: cellIdentifier)
@@ -66,15 +66,13 @@ class ProfileController: UICollectionViewController {
         collectionView.refreshControl = refresher
     }
     
-    func showEditProfileController() {  //自分のEditページを開く(これが呼ばれるのは自分自身のページを見ている場合のみ)
-        let controller = EditProfileController(user: user)  //このページが保持するuserをそのまま引き継がせる
-        controller.delegate = self
-        let nav = UINavigationController(rootViewController: controller)
+    private func showEditProfileController() {  //自分のEditページを開く(これが呼ばれるのは自分自身のページを見ている場合のみ)
+        let vc = EditProfileController(user: user)  //このページが保持するuserをそのまま引き継がせる
+        vc.delegate = self
+        let nav = UINavigationController(rootViewController: vc)
         nav.modalPresentationStyle = .fullScreen
         present(nav, animated: true)
     }
-
-
 
     // MARK: - Actions
     
@@ -82,6 +80,7 @@ class ProfileController: UICollectionViewController {
         posts.removeAll()
         fetchPosts()
     }
+    
     
     // MARK: - API
     
@@ -106,6 +105,7 @@ class ProfileController: UICollectionViewController {
         }
     }
 }
+
 
 // MARK: - UICollectionViewDataSource
 
@@ -133,7 +133,6 @@ extension ProfileController {
 // MARK: - UICollectionViewDelegateFlowLayout
 
 extension ProfileController: UICollectionViewDelegateFlowLayout {
-    
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
         return 1
     }

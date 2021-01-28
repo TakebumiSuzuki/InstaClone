@@ -10,7 +10,7 @@ import SDWebImage
 
 //以下の3つのプロトコルfuncはProfileControllerで実行される。一番上のdidTapのロジックが複雑。
 protocol ProfileHeaderDelegate: class {
-    func header(_ profileHeader: ProfileHeader, didTapActionButtonFor user: User) //follow/unfollow/edit
+    func header(_ profileHeader: ProfileHeader, didTapActionButtonFor user: User) //follow/unfollow/edit共通ボタン
     func header(_ profileHeader: ProfileHeader, wantsToViewFollowersFor user: User)
     func header(_ profileHeader: ProfileHeader, wantsToViewFollowingFor user: User)
 }
@@ -36,6 +36,7 @@ class ProfileHeader: UICollectionReusableView {
     private let nameLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.boldSystemFont(ofSize: 14)
+        label.textAlignment = .center
         return label
     }()
     
@@ -80,20 +81,20 @@ class ProfileHeader: UICollectionReusableView {
         return label
     }()
     
-    private let gridButton: UIButton = {
+    private let gridButton: UIButton = {  //未搭載
         let button = UIButton(type: .system)
         button.setImage(#imageLiteral(resourceName: "grid"), for: .normal)
         return button
     }()
     
-    private let listButton: UIButton = {
+    private let listButton: UIButton = {  //未搭載
         let button = UIButton(type: .system)
         button.setImage(#imageLiteral(resourceName: "list"), for: .normal)
         button.tintColor = UIColor(white: 0, alpha: 0.2)
         return button
     }()
     
-    private let bookmarkButton: UIButton = {
+    private let bookmarkButton: UIButton = {  //未搭載
         let button = UIButton(type: .system)
         button.setImage(#imageLiteral(resourceName: "ribbon"), for: .normal)
         button.tintColor = UIColor(white: 0, alpha: 0.2)
@@ -114,6 +115,7 @@ class ProfileHeader: UICollectionReusableView {
         
         addSubview(nameLabel)
         nameLabel.anchor(top: profileImageView.bottomAnchor, left: leftAnchor, paddingTop: 12, paddingLeft: 12)
+        nameLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 80).isActive = true
         
         addSubview(editProfileFollowButton)
         editProfileFollowButton.anchor(top: nameLabel.bottomAnchor, left: leftAnchor,
@@ -175,12 +177,12 @@ class ProfileHeader: UICollectionReusableView {
         nameLabel.text = viewModel.fullname
         profileImageView.sd_setImage(with: viewModel.profileImageUrl)
         
-        editProfileFollowButton.setTitle(viewModel.followButtonText, for: .normal)
-        editProfileFollowButton.setTitleColor(viewModel.followButtonTextColor, for: .normal)
-        editProfileFollowButton.backgroundColor = viewModel.followButtonBackgroundColor
-        
         postsLabel.attributedText = viewModel.numberOfPosts
         followersLabel.attributedText = viewModel.numberOfFollowers
         followingLabel.attributedText = viewModel.numberOfFollowing
+        
+        editProfileFollowButton.setTitle(viewModel.followButtonText, for: .normal)
+        editProfileFollowButton.setTitleColor(viewModel.followButtonTextColor, for: .normal)
+        editProfileFollowButton.backgroundColor = viewModel.followButtonBackgroundColor
     }
 }

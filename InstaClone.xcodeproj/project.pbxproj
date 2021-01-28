@@ -65,7 +65,6 @@
 		0C0C092B25C169DA006C79C5 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0C0C092A25C169DA006C79C5 /* GoogleService-Info.plist */; };
 		0C0C093025C1732F006C79C5 /* CustomButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0C092F25C1732F006C79C5 /* CustomButton.swift */; };
 		0C0C093525C18C11006C79C5 /* Billabong.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0C0C093425C18C11006C79C5 /* Billabong.ttf */; };
-		0C0C093825C1EC1B006C79C5 /* AlertService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0C093725C1EC1B006C79C5 /* AlertService.swift */; };
 		4ACE9768C0A7F2172779C96B /* Pods_InstaClone.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F6AC4F6EA7832FD313E77B7 /* Pods_InstaClone.framework */; };
 /* End PBXBuildFile section */
 
@@ -130,7 +129,6 @@
 		0C0C092A25C169DA006C79C5 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		0C0C092F25C1732F006C79C5 /* CustomButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomButton.swift; sourceTree = "<group>"; };
 		0C0C093425C18C11006C79C5 /* Billabong.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = Billabong.ttf; path = Billabong/Billabong.ttf; sourceTree = SOURCE_ROOT; };
-		0C0C093725C1EC1B006C79C5 /* AlertService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertService.swift; sourceTree = "<group>"; };
 		2539147B5DDFBC833335F3A8 /* Pods-InstaClone.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InstaClone.release.xcconfig"; path = "Target Support Files/Pods-InstaClone/Pods-InstaClone.release.xcconfig"; sourceTree = "<group>"; };
 		5F6AC4F6EA7832FD313E77B7 /* Pods_InstaClone.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_InstaClone.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C14381A715CFC0EFD0D33BA /* Pods-InstaClone.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InstaClone.debug.xcconfig"; path = "Target Support Files/Pods-InstaClone/Pods-InstaClone.debug.xcconfig"; sourceTree = "<group>"; };
@@ -201,16 +199,14 @@
 		0C0C085D25C092FC006C79C5 /* View */ = {
 			isa = PBXGroup;
 			children = (
-				0C0C086525C0931F006C79C5 /* Messaging */,
 				0C0C086725C0932C006C79C5 /* Profile */,
+				0C0C086525C0931F006C79C5 /* Messaging */,
 				0C0C087525C09363006C79C5 /* FeedCell.swift */,
 				0C0C087C25C0939D006C79C5 /* UserCell.swift */,
 				0C0C087F25C093AA006C79C5 /* CommentCell.swift */,
 				0C0C088525C093C1006C79C5 /* NotificationCell.swift */,
 				0C0C088825C093CA006C79C5 /* ImageSelectorHeader.swift */,
-				0C0C092F25C1732F006C79C5 /* CustomButton.swift */,
-				0C0C087825C09395006C79C5 /* CustomTextField.swift */,
-				0C0C088225C093B7006C79C5 /* CustomInputAccessoryView.swift */,
+				0C59209A25C3432700A7C7C7 /* CustomUIView */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -227,10 +223,10 @@
 		0C0C086725C0932C006C79C5 /* Profile */ = {
 			isa = PBXGroup;
 			children = (
+				0C0C087225C0935C006C79C5 /* ProfileHeader.swift */,
+				0C0C086F25C09351006C79C5 /* ProfileCell.swift */,
 				0C0C086825C09342006C79C5 /* EditProfileHeader.swift */,
 				0C0C086C25C0934B006C79C5 /* EditProfileCell.swift */,
-				0C0C086F25C09351006C79C5 /* ProfileCell.swift */,
-				0C0C087225C0935C006C79C5 /* ProfileHeader.swift */,
 			);
 			path = Profile;
 			sourceTree = "<group>";
@@ -252,8 +248,8 @@
 		0C0C089325C093F7006C79C5 /* Pofile */ = {
 			isa = PBXGroup;
 			children = (
-				0C0C088C25C093E8006C79C5 /* EditProfileViewModel.swift */,
 				0C0C089025C093F1006C79C5 /* ProfileHeaderViewModel.swift */,
+				0C0C088C25C093E8006C79C5 /* EditProfileViewModel.swift */,
 			);
 			path = Pofile;
 			sourceTree = "<group>";
@@ -278,8 +274,8 @@
 		0C0C08A825C09449006C79C5 /* Profile */ = {
 			isa = PBXGroup;
 			children = (
-				0C0C08AC25C09479006C79C5 /* EditProfileController.swift */,
 				0C0C08B025C09481006C79C5 /* ProfileController.swift */,
+				0C0C08AC25C09479006C79C5 /* EditProfileController.swift */,
 			);
 			path = Profile;
 			sourceTree = "<group>";
@@ -332,7 +328,6 @@
 				0C0C08F225C09582006C79C5 /* Extensions.swift */,
 				0C0C08F625C09588006C79C5 /* Constants.swift */,
 				0C0C08F925C09591006C79C5 /* InputTextView.swift */,
-				0C0C093725C1EC1B006C79C5 /* AlertService.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -343,6 +338,16 @@
 				0C0C093425C18C11006C79C5 /* Billabong.ttf */,
 			);
 			path = Fonts;
+			sourceTree = "<group>";
+		};
+		0C59209A25C3432700A7C7C7 /* CustomUIView */ = {
+			isa = PBXGroup;
+			children = (
+				0C0C092F25C1732F006C79C5 /* CustomButton.swift */,
+				0C0C087825C09395006C79C5 /* CustomTextField.swift */,
+				0C0C088225C093B7006C79C5 /* CustomInputAccessoryView.swift */,
+			);
+			path = CustomUIView;
 			sourceTree = "<group>";
 		};
 		3E14C82228F499F9D412F9DF /* Pods */ = {
@@ -507,7 +512,6 @@
 				0C0C086D25C0934B006C79C5 /* EditProfileCell.swift in Sources */,
 				0C0C089625C0940C006C79C5 /* AuthenticationViewModel.swift in Sources */,
 				0C0C093025C1732F006C79C5 /* CustomButton.swift in Sources */,
-				0C0C093825C1EC1B006C79C5 /* AlertService.swift in Sources */,
 				0C0C08C325C094C4006C79C5 /* RegistrationController.swift in Sources */,
 				0C0C08D225C094FF006C79C5 /* NotificationController.swift in Sources */,
 				0C0C089125C093F1006C79C5 /* ProfileHeaderViewModel.swift in Sources */,

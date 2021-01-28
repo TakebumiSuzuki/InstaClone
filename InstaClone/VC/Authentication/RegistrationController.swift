@@ -231,18 +231,14 @@ class RegistrationController: UIViewController {
         }
         updateButtonColor()  //毎回文字が打ち込まれるたびにこれが実行され、buttonの色を変えるかどうか判断する。
     }
-}
-
-// MARK: - FormViewModel
-
-extension RegistrationController: FormViewModel {  //LonginControllerと同様、FormViewModelの部分はなくても良い。
     
-    func updateButtonColor() {
+    private func updateButtonColor() {
         signUpButton.backgroundColor = viewModel.buttonBackgroundColor
         signUpButton.setTitleColor(viewModel.buttonTitleColor, for: .normal)
         signUpButton.isEnabled = viewModel.formIsValid
     }
 }
+
 
 //MARK: - UITextFieldDelegate
 

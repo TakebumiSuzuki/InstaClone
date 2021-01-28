@@ -127,18 +127,14 @@ class ResetPasswordController: UIViewController {
         }
         updateButtonColor()
     }
-}
-
-// MARK: - FormViewModel
-
-extension ResetPasswordController: FormViewModel {
     
-    func updateButtonColor() {
+    private func updateButtonColor() {
         resetPasswordButton.backgroundColor = viewModel.buttonBackgroundColor
         resetPasswordButton.setTitleColor(viewModel.buttonTitleColor, for: .normal)
         resetPasswordButton.isEnabled = viewModel.formIsValid
     }
 }
+
 
 //MARK: - UITextFieldDelegate
 extension ResetPasswordController: UITextFieldDelegate{

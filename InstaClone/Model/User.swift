@@ -15,13 +15,12 @@ struct User {
     var profileImageUrl: String
     var username: String
     let uid: String
-    let fcmToken: String
-    
-    var isFollowed = false  //このuserをcurrentUserがフォローしているかどうかを後付けで入れる。
-    var stats: UserStats!  //なぜ!マークをつけているのか不明
-    
     var isCurrentUser: Bool { return Auth.auth().currentUser?.uid == uid }
     
+    var isFollowed = false  //このuserをcurrentUserがフォローしているかどうかを後付けで入れる。
+    var stats: UserStats!  //なぜ!マークをつけているのか不明。イニシャライズ時は(0,0,0)で情報を入れ、実際は後付け
+    
+    let fcmToken: String
     
     init(dictionary: [String: Any]) {
         self.email = dictionary["email"] as? String ?? ""

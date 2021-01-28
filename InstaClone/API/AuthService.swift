@@ -19,18 +19,13 @@ struct AuthCredentials {
     let profileImage: UIImage
 }
 
+
 struct AuthService {
-    
-    //AuthDataResultCallback型については不明。
-    static func logUserIn(withEmail email: String, password: String, completion: AuthDataResultCallback?) {
-        Auth.auth().signIn(withEmail: email, password: password, completion: completion)
-    }
-    
     
     ///UIImageをstoreに保存、Authでアカウントを作成、その他の情報をFirestoreに保存。
     static func registerUser(withCredential credentials: AuthCredentials, completion: @escaping(Error?) -> Void) {
         
-        ImageUploader.uploadImage(image: credentials.profileImage) { result in
+        ImageUploader.uploadImage(image: credentials.profileImage, imageKind: .profileImage) { (result) in
             
             switch result{
             case .failure(let error):
@@ -48,19 +43,25 @@ struct AuthService {
                         completion(CustomError.dataHandling)
                         return
                     }
-                    let data: [String: Any] = ["email": credentials.email,
+                    var data: [String: Any] = ["email": credentials.email,
                                                "fullname": credentials.fullname,
                                                "profileImageUrl": imageUrl,
                                                "uid": uid,
                                                "username": credentials.username]
                     
-//                    if let fcmToken = Messaging.messaging().fcmToken {
-//                        data["fcmToken"] = fcmToken
-//                    }
+                    if let fcmToken = Messaging.messaging().fcmToken {
+                        data["fcmToken"] = fcmToken
+                    }
                     COLLECTION_USERS.document(uid).setData(data, completion: completion)
                 }
             }
         }
+    }
+    
+    
+    //AuthDataResultCallback型については不明。
+    static func logUserIn(withEmail email: String, password: String, completion: AuthDataResultCallback?) {
+        Auth.auth().signIn(withEmail: email, password: password, completion: completion)
     }
     
     

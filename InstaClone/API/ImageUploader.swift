@@ -8,31 +8,45 @@
 
 import FirebaseStorage
 
-public enum CustomError: String, Error{
+public enum CustomError: Error{
+    
     case dataHandling
-    
-    
     
     var localizedDescription: String{
         switch self{
         case .dataHandling:
             return "Data handling error occured in this device"
-        
         }
     }
+}
+
+public enum ImageKind{
+    case profileImage
+    case feedImage
 }
 
 struct ImageUploader {
     
     ///UIImageを引数に、それをjpeg化し、NSUUIDのファイル名でstorageに保存。downloadURLを引数にcompletion。
-    static func uploadImage(image: UIImage, completion: @escaping (Result<String, Error>) -> Void) {
+    static func uploadImage(image: UIImage, imageKind: ImageKind, completion: @escaping (Result<String, Error>) -> Void) {
         
-        guard let imageData = image.jpegData(compressionQuality: 0.75) else {
+        var quality = 0.0
+        var path = ""
+        switch imageKind{
+        case .profileImage:
+            quality = 0.4
+            path = "/profile_images/"
+        case .feedImage:
+            quality = 0.75
+            path = "/feed_images/"
+        }
+        
+        guard let imageData = image.jpegData(compressionQuality: CGFloat(quality)) else {
             completion(.failure(CustomError.dataHandling))
             return
         }
         let filename = NSUUID().uuidString
-        let ref = Storage.storage().reference(withPath: "/profile_images/\(filename)")  //ファイル名はNSUUID()で作成
+        let ref = Storage.storage().reference(withPath: "\(path)\(filename)")  //ファイル名はNSUUID()で作成
         
         ref.putData(imageData, metadata: nil) { metadata, error in
             

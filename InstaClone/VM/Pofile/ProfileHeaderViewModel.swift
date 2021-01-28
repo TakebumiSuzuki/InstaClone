@@ -10,19 +10,17 @@ import UIKit
 //userを引数にinitされ、userの名前やフォロー数などの表示内容、following/followの切り替えロジックを行う。
 struct ProfileHeaderViewModel {
     
+    let user: User  //自分でも相手でも誰でも良いuserオブジェクト
     init(user: User) {
         self.user = user
     }
-    let user: User  //自分でも相手でも誰でも良いuserオブジェクト
-   
     
-    var fullname: String {
-        return user.fullname
-    }
     
-    var profileImageUrl: URL? {
-        return URL(string: user.profileImageUrl)
-    }
+    var fullname: String { return user.fullname }
+    
+    var profileImageUrl: URL? { return URL(string: user.profileImageUrl) }
+    
+    
     
     var followButtonText: String {
         if user.isCurrentUser {   //userオブジェクトが自分自身である場合
