@@ -15,13 +15,8 @@ class ProfileCell: UICollectionViewCell {
         didSet { configure() }
     }
     
-    var photoImageView: UIImage? {  //名前にViewと付いていてややこしいが、写真そのもの(UIImage)。でも実は使ってなくない？
-        didSet { postImageView.image = photoImageView }
-    }
-    
     private let postImageView: UIImageView = {
         let iv = UIImageView()
-        iv.image = #imageLiteral(resourceName: "venom-7")
         iv.contentMode = .scaleAspectFill
         iv.clipsToBounds = true
         return iv

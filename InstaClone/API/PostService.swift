@@ -46,16 +46,17 @@ struct PostService {
     }
     
     //ProfileController下部のpost欄からPaginateion必要かと。-----------------------------------------------------------------------
-    static func fetchPosts(forUser uid: String, completion: @escaping([Post]) -> Void) {
+    static func fetchPosts(forUser uid: String, completion: @escaping (Result<[Post], Error>) -> Void) {
         let query = COLLECTION_POSTS.whereField("ownerUid", isEqualTo: uid)
         
         query.getDocuments { (snapshot, error) in
+            if let error = error{
+                completion(.failure(error))
+            }
             guard let documents = snapshot?.documents else { return }
-            
             var posts = documents.map({ Post(postId: $0.documentID, dictionary: $0.data()) })
             posts.sort(by: { $0.timestamp.seconds > $1.timestamp.seconds })
-            
-            completion(posts)
+            completion(.success(posts))
         }
     }
     

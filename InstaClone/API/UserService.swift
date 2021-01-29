@@ -132,55 +132,45 @@ struct UserService {
         
     }
     
-    static func updateProfileImage(forUser user: User, image: UIImage, completion: @escaping(String?, Error?) -> Void) {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+    //--------------------------------------------------------------------------------------
+    static func updateProfileImage(forUser user: User, image: UIImage, completion: @escaping (String?, Error?) -> Void) {
+//        guard let uid = Auth.auth().currentUser?.uid else { return }
         
         Storage.storage().reference(forURL: user.profileImageUrl).delete(completion: nil)
-                
+        
         ImageUploader.uploadImage(image: image, imageKind: .profileImage) { (result) in
             
             switch result{
             case .failure(let error):
-                print(error.localizedDescription)
-                return
+                completion(nil, error)
                 
             case .success(let profileImageUrl):
-                let data = ["profileImageUrl": profileImageUrl]
+                completion(profileImageUrl, nil)
                 
-                COLLECTION_USERS.document(uid).updateData(data) { error in
-                    if let error = error {
-                        completion(nil, error)
-                        return
-                    }
-                    //過去のポストに含まれるprofilrImageUrlをfor loopを使って全て更新。
-                    COLLECTION_POSTS.whereField("ownerUid", isEqualTo: user.uid).getDocuments { snapshot, error in
-                        guard let documents = snapshot?.documents else { return }
-                        let data = ["ownerImageUrl": profileImageUrl]
-                        documents.forEach({ COLLECTION_POSTS.document($0.documentID).updateData(data) })
-                    }
-                    
+//                let data = ["profileImageUrl": profileImageUrl]
+                //過去のポストに含まれるprofilrImageUrlをfor loopを使って全て更新。
+//                    COLLECTION_POSTS.whereField("ownerUid", isEqualTo: user.uid).getDocuments { snapshot, error in
+//                        guard let documents = snapshot?.documents else { return }
+//                        let data = ["ownerImageUrl": profileImageUrl]
+//                        documents.forEach({ COLLECTION_POSTS.document($0.documentID).updateData(data) })
+//                    }
                     // need to update profile image url in comments and messages
-                    
-                    completion(profileImageUrl, nil)
-                }
-            
             }
-            
         }
     }
     
-    ///userオブジェクトをsetで保存。パスはuid
-    static func saveUserData(user: User, completion: @escaping(FirestoreCompletion)) {
+    ///userオブジェクトをsetで保存。パスはuid-------------------------------------------------------------------------------------------
+    static func saveUserData(user: User, completion: @escaping (FirestoreCompletion)) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         
-        let data: [String: Any] = ["email": user.email,
+        let data: [String: Any] = ["email": user.email,  //将来的にemailも変更できるようにした場合にはこのラインが必要となる
                                    "fullname": user.fullname,
                                    "profileImageUrl": user.profileImageUrl,
-                                   "uid": uid,
                                    "username": user.username]
         
-        COLLECTION_USERS.document(uid).setData(data, completion: completion)
+        COLLECTION_USERS.document(uid).setData(data, merge: true, completion: completion)
     }
+    
     
     static func setUserFCMToken() {
         guard let uid = Auth.auth().currentUser?.uid else { return }

@@ -39,7 +39,7 @@
 		0C0C08A525C09435006C79C5 /* MessageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0C08A425C09435006C79C5 /* MessageViewModel.swift */; };
 		0C0C08AD25C09479006C79C5 /* EditProfileController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0C08AC25C09479006C79C5 /* EditProfileController.swift */; };
 		0C0C08B125C09481006C79C5 /* ProfileController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0C08B025C09481006C79C5 /* ProfileController.swift */; };
-		0C0C08B425C0948E006C79C5 /* ImageSelectorController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0C08B325C0948E006C79C5 /* ImageSelectorController.swift */; };
+		0C0C08B425C0948E006C79C5 /* DummyVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0C08B325C0948E006C79C5 /* DummyVC.swift */; };
 		0C0C08B725C0949C006C79C5 /* UploadPostController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0C08B625C0949C006C79C5 /* UploadPostController.swift */; };
 		0C0C08BA25C094A7006C79C5 /* ConversationsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0C08B925C094A7006C79C5 /* ConversationsController.swift */; };
 		0C0C08BD25C094AF006C79C5 /* ChatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0C08BC25C094AF006C79C5 /* ChatController.swift */; };
@@ -103,7 +103,7 @@
 		0C0C08A425C09435006C79C5 /* MessageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageViewModel.swift; sourceTree = "<group>"; };
 		0C0C08AC25C09479006C79C5 /* EditProfileController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileController.swift; sourceTree = "<group>"; };
 		0C0C08B025C09481006C79C5 /* ProfileController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileController.swift; sourceTree = "<group>"; };
-		0C0C08B325C0948E006C79C5 /* ImageSelectorController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageSelectorController.swift; sourceTree = "<group>"; };
+		0C0C08B325C0948E006C79C5 /* DummyVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DummyVC.swift; sourceTree = "<group>"; };
 		0C0C08B625C0949C006C79C5 /* UploadPostController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadPostController.swift; sourceTree = "<group>"; };
 		0C0C08B925C094A7006C79C5 /* ConversationsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationsController.swift; sourceTree = "<group>"; };
 		0C0C08BC25C094AF006C79C5 /* ChatController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatController.swift; sourceTree = "<group>"; };
@@ -264,6 +264,7 @@
 				0C0C08C825C094E1006C79C5 /* MainTabController.swift */,
 				0C0C08CB25C094E9006C79C5 /* FeedController.swift */,
 				0C0C08CE25C094F4006C79C5 /* SearchController.swift */,
+				0C0C08B325C0948E006C79C5 /* DummyVC.swift */,
 				0C0C08D125C094FF006C79C5 /* NotificationController.swift */,
 				0C0C08D425C09506006C79C5 /* CommentController.swift */,
 				0C0C08D725C09515006C79C5 /* HashtagPostsController.swift */,
@@ -283,7 +284,6 @@
 		0C0C08A925C0944E006C79C5 /* MediaUpload */ = {
 			isa = PBXGroup;
 			children = (
-				0C0C08B325C0948E006C79C5 /* ImageSelectorController.swift */,
 				0C0C08B625C0949C006C79C5 /* UploadPostController.swift */,
 			);
 			path = MediaUpload;
@@ -484,7 +484,7 @@
 			files = (
 				0C0C08D825C09515006C79C5 /* HashtagPostsController.swift in Sources */,
 				0C0C08E025C09533006C79C5 /* AuthService.swift in Sources */,
-				0C0C08B425C0948E006C79C5 /* ImageSelectorController.swift in Sources */,
+				0C0C08B425C0948E006C79C5 /* DummyVC.swift in Sources */,
 				0C0C089C25C0941D006C79C5 /* PostViewModel.swift in Sources */,
 				0C0C08BA25C094A7006C79C5 /* ConversationsController.swift in Sources */,
 				0C0C088D25C093E8006C79C5 /* EditProfileViewModel.swift in Sources */,

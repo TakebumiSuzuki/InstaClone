@@ -11,10 +11,11 @@ private let cellIdentifier = "ProfileCell"
 private let headerIdentifier = "ProfileHeader"
 
 
-//このページは様々なページへとリンクしているので複雑になる。
 //画面上半分のheaderViewを表示させるため、ProfileHeaderViewModelを作り、自分がdelegateになる。
 //画面半分下のポストをタップすると、その単体のポストでFeedControllerをpush。各ポストのcellに対してPostViewModelを作る。
-//headerViewにはProfileHeaerVMとProfileHeaderViewが、cellにはProfileCellとPostVMが使われている。
+//headerViewではProfileHeaerVMとProfileHeaderViewが、cellにはProfileCellとPostVMが使われている。
+//問題となるのはuserが自分の時→Tabbarに組み込まれるのでviewDidLoadは一回のみ。さらにdeinitされない。
+//userが他人の時→別画面からpushされるのでviewDidLoadとdeinitはその度に呼ばれる。これが論理混乱の元となる。
 
 class ProfileController: UICollectionViewController {
     
@@ -24,7 +25,9 @@ class ProfileController: UICollectionViewController {
     //重要な事はここでpassされているuserはstructであり、元のuser(MainTabControllerのストアプロパティ)とは別に作られたコピーであるという事。
     //そもそもUserをstructじゃなくてclassで作るべきなのでは?
     private var user: User {
-        didSet { collectionView.reloadData() }  //ここにfetchUserStats()が抜けているので付け足すべき。viewDidLoad()からしか呼ばれない設計なので。
+        didSet {
+            collectionView.reloadData()
+        }
     }
     private var posts = [Post]()
     
@@ -42,19 +45,29 @@ class ProfileController: UICollectionViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         configureCollectionView()
-        checkIfUserIsFollowed()  //APIアクセスをして自分がuserをフォローしているかを調べてuserオブジェクトを更新(Boolを代入する)
-        fetchUserStats()  //APIアクセスをしてuserのstatsオブジェクトを生成して、userオブジェクトに代入する。
-        fetchPosts()  //APIアクセスをしてpost配列をget。以上の数行はAsync処理なので、同時進行でCollectionViewのDatasourceなどが呼ばれる。
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(true)
+        
+        UserService.fetchUser(withUid: user.uid) { (user) in
+            self.navigationItem.title = user.username
+            self.checkIfUserIsFollowed()  //APIアクセスをして自分がuserをフォローしているかを調べてuserオブジェクトを更新(Boolを代入する)
+            self.fetchUserStats()  //APIアクセスをしてuserのstatsオブジェクトを生成して、userオブジェクトに代入する。
+            //以上2つはuserオブジェクトをアップデートするのでどちらもdidSetが呼ばれてreloadData()が実行される
+            self.fetchPosts()  //APIアクセスをしてpost配列をget。このメソッドの最後でreloadData()が実行される
+        }
+    }
+    deinit {
+        print("profilecontroller deinited------------------------------------------------")
+    }
     
     
     // MARK: - Helpers
     
     private func configureCollectionView() {
-        navigationItem.title = user.username
+        
         collectionView.backgroundColor = .white
         collectionView.register(ProfileCell.self, forCellWithReuseIdentifier: cellIdentifier)
         collectionView.register(ProfileHeader.self,
@@ -76,32 +89,37 @@ class ProfileController: UICollectionViewController {
 
     // MARK: - Actions
     
-    @objc func handleRefresh() {
-        posts.removeAll()
+    @objc func handleRefresh() {  //checkIfUserIsFollowed()をここに含める必要はない。他ユーザーからの干渉はないので。
         fetchPosts()
+        fetchUserStats()
     }
     
     
     // MARK: - API
-    
+    //これらのメソッドはuserとpostsをmutateする。
     func checkIfUserIsFollowed() {  //中央のボタンの表示(3種類ある)がどれになるかを決定するために必要
         UserService.checkIfUserIsFollowed(uid: user.uid) { isFollowed in
             self.user.isFollowed = isFollowed
         }
     }
     
-    func fetchUserStats() {  //問題はこのuserStatsをAPIからgetしてuserをアップデートするメソッドがviewDidLoad()からしか呼ばれていない事。
+    func fetchUserStats() {
         UserService.fetchUserStats(uid: user.uid) { stats in
-            self.user.stats = stats
-            self.collectionView.reloadData()
+            self.user.stats = stats   //statsの値が変化していなくてもこのラインがある事によりuserのdidSetは必ず発動される。
         }
     }
     
     func fetchPosts() {  // 一つ上のfetchUserStatsとかなり被ったAPIアクセスなのでお金の無駄が生じているかと。。
-        PostService.fetchPosts(forUser: user.uid) { posts in
-            self.posts = posts
-            self.collectionView.reloadData()
-            self.collectionView.refreshControl?.endRefreshing()
+        PostService.fetchPosts(forUser: user.uid) { result in
+            switch result{
+            case .failure(_):
+                self.showSimpleAlert(title: "Error", message: "Fialed to download new posts", actionTitle: "ok")
+                self.collectionView.refreshControl?.endRefreshing()
+            case .success(let posts):
+                self.posts = posts
+                self.collectionView.reloadData()
+                self.collectionView.refreshControl?.endRefreshing()
+            }
         }
     }
 }
@@ -110,6 +128,15 @@ class ProfileController: UICollectionViewController {
 // MARK: - UICollectionViewDataSource
 
 extension ProfileController {
+    
+    override func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
+                
+        let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: headerIdentifier, for: indexPath) as! ProfileHeader
+        header.delegate = self
+        header.viewModel = ProfileHeaderViewModel(user: user)
+        return header
+    }
+    
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return posts.count
     }
@@ -118,14 +145,6 @@ extension ProfileController {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellIdentifier, for: indexPath) as! ProfileCell
         cell.viewModel = PostViewModel(post: posts[indexPath.row])  //PostViewModelを流用している
         return cell
-    }
-    
-    override func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
-                
-        let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: headerIdentifier, for: indexPath) as! ProfileHeader
-        header.delegate = self
-        header.viewModel = ProfileHeaderViewModel(user: user)
-        return header
     }
 }
 
@@ -151,16 +170,6 @@ extension ProfileController: UICollectionViewDelegateFlowLayout {
     }
 }
 
-// MARK: - UICollectionViewDelegate
-
-extension ProfileController {
-    
-    override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let controller = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
-        controller.post = posts[indexPath.row]
-        navigationController?.pushViewController(controller, animated: true)
-    }
-}
 
 
 // MARK: - ProfileHeaderDelegate
@@ -179,13 +188,14 @@ extension ProfileController: ProfileHeaderDelegate {
         } else if user.isFollowed {    //すでにフォローしている人のプロフィールを見ている場合→アンフォロー
             UserService.unfollow(uid: user.uid) { error in
                 self.user.isFollowed = false  //こうしてisFollowedプロパティが変更されるとuserのdidSetが起動する。
-                
+                self.user.stats.followers -= 1
                 NotificationService.deleteNotification(toUid: user.uid, type: .follow)
             }
+            
         } else {     //フォローしていない人の写真を見ている場合→フォロー
             UserService.follow(uid: user.uid) { error in
                 self.user.isFollowed = true
-                
+                self.user.stats.followers += 1
                 NotificationService.uploadNotification(toUid: user.uid,
                                                        fromUser: currentUser,
                                                        type: .follow)
@@ -194,14 +204,24 @@ extension ProfileController: ProfileHeaderDelegate {
     }
     
     func header(_ profileHeader: ProfileHeader, wantsToViewFollowersFor user: User) {
-        
-        let controller = SearchController(config: .followers(user.uid))
-        navigationController?.pushViewController(controller, animated: true)
+        let VC = SearchController(config: .followers(user.uid))
+        navigationController?.pushViewController(VC, animated: true)
     }
     
     func header(_ profileHeader: ProfileHeader, wantsToViewFollowingFor user: User) {
-        let controller = SearchController(config: .following(user.uid))
-        navigationController?.pushViewController(controller, animated: true)
+        let VC = SearchController(config: .following(user.uid))
+        navigationController?.pushViewController(VC, animated: true)
+    }
+}
+
+// MARK: - UICollectionViewDelegate
+
+extension ProfileController {
+    
+    override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let VC = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
+        VC.post = posts[indexPath.row]
+        navigationController?.pushViewController(VC, animated: true)
     }
 }
 

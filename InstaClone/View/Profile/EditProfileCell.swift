@@ -8,7 +8,7 @@
 import UIKit
 
 protocol EditProfileCellDelegate: class {
-    func updateUserInfo(_ cell: EditProfileCell)  //EditProfileControllerで
+    func updateUserInfo(_ cell: EditProfileCell)  //textFieldのaddTargetからinvokeされる。
 }
 
 class EditProfileCell: UITableViewCell {
@@ -21,19 +21,20 @@ class EditProfileCell: UITableViewCell {
     
     weak var delegate: EditProfileCellDelegate?
     
-    let titleLabel: UILabel = {
+    private let titleLabel: UILabel = {
         let label = UILabel()
-        label.font = UIFont.systemFont(ofSize: 14)
+        label.font = UIFont.systemFont(ofSize: 16)
         return label
     }()
     
     lazy var infoTextField: UITextField = { //ここのaddTargetの.editingDidEndの部分は調べるべき
         let tf = UITextField()
-        tf.borderStyle = .none
-        tf.font = UIFont.systemFont(ofSize: 14)
-        tf.textAlignment = .left
-        //addTargetはUIControlクラスのメソッド
-        tf.addTarget(self, action: #selector(handleUpdateUserInfo), for: .editingDidEnd)
+        tf.keyboardAppearance = .default
+        tf.returnKeyType = .done
+        tf.autocorrectionType = .no
+        tf.font = UIFont.systemFont(ofSize: 16)
+        //addTargetはUIControlクラスのメソッド。AppleDocumentのUIControll>UIControl.Eventに長いリストがあるのでチェック。
+        tf.addTarget(self, action: #selector(handleUpdateUserInfo), for: .editingChanged)
         return tf
     }()
     
@@ -42,16 +43,16 @@ class EditProfileCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         
-        selectionStyle = .none
+        selectionStyle = .none    //cell上をタップした時に灰色の選択色にならないように。
+        infoTextField.delegate = self
         
-        addSubview(titleLabel)   //ここのself.addSubviewと下のcontentView.addSubviewの違いを調べるべき
+        contentView.addSubview(titleLabel)   //self.addSubviewと下のcontentView.addSubviewの違いを調べるべき
         titleLabel.widthAnchor.constraint(equalToConstant: 100).isActive = true
-        titleLabel.anchor(top: topAnchor, left: leftAnchor, paddingTop: 12, paddingLeft: 16)
+        titleLabel.centerY(inView: self, leftAnchor: self.leftAnchor, paddingLeft: 30)
         
         contentView.addSubview(infoTextField)
-        infoTextField.anchor(top: topAnchor, left: titleLabel.rightAnchor,
-                             bottom: bottomAnchor, right: rightAnchor, paddingTop: 4,
-                             paddingLeft: 16, paddingRight: 8)
+        infoTextField.centerY(inView: self, leftAnchor: titleLabel.rightAnchor, paddingLeft: 16)
+        //ここのpaddingLeftの部分は、上でwidthAnchorが100にセットされているので、その幅分プラス16となる。
     }
     
     required init?(coder: NSCoder) {
@@ -65,6 +66,7 @@ class EditProfileCell: UITableViewCell {
         
         titleLabel.text = viewModel.titleText
         infoTextField.text = viewModel.optionValue
+        infoTextField.autocapitalizationType = viewModel.option == .fullname ? .words : .none
     }
     
     // MARK: - Selectors
@@ -73,6 +75,13 @@ class EditProfileCell: UITableViewCell {
         delegate?.updateUserInfo(self) //selfとはcell自身。この引数が必要な理由はcell.viewModelが必要だから
     }
     
+}
 
+//MARK: - UITextFieldDelegate
+extension EditProfileCell: UITextFieldDelegate{  //キーボードのリターンキーを押した時にキーボードが閉じるように。
     
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
+    }
 }

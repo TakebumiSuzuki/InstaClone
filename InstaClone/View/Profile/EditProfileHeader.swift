@@ -18,18 +18,21 @@ class EditProfileHeader: UIView {
     private let user: User
     weak var delegate: EditProfileHeaderDelegate?
     
-    let profileImageView: UIImageView = {
-        
+    lazy var profileImageView: UIImageView = {
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFill
         iv.clipsToBounds = true
         iv.backgroundColor = .lightGray
         iv.layer.borderColor = UIColor.black.cgColor
-        iv.layer.borderWidth = 2.0
+        iv.layer.borderWidth = 0.5
+        
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handleChangeProfilePhoto))
+        iv.isUserInteractionEnabled = true
+        iv.addGestureRecognizer(tap)
         return iv
     }()
     
-    private let changePhotoButton: UIButton = {
+    private lazy var changePhotoButton: UIButton = {
         
         let button = UIButton(type: .system)
         button.setTitle("Change Profile Photo", for: .normal)

@@ -10,7 +10,7 @@ import Firebase
 import YPImagePicker
 
 //全てのタブは個別のnavigationControllerにembedされる形で生成される。真ん中のタブのみYPImagePickerを全画面でpresentさせ、
-//写真選択後はUploadPostControllerをその上にさらに全画面presentさせる。ポスト後はfeedタブを選択しつつdismiss。
+//写真選択後はUploadPostControllerをその上にさらに全画面presentさせる。投稿後はfeedタブを選択しつつdismiss。
 class MainTabController: UITabBarController {
     
     // MARK: - Lifecycle
@@ -35,13 +35,11 @@ class MainTabController: UITabBarController {
     
     func checkIfUserIsLoggedIn() {
         if Auth.auth().currentUser == nil {   //syncなのでDispatchQueueがなくても全く問題なく動く
-            DispatchQueue.main.async {
-                let controller = LoginController()
-                controller.delegate = self
-                let nav = UINavigationController(rootViewController: controller)
-                nav.modalPresentationStyle = .fullScreen
-                self.present(nav, animated: true, completion: nil)
-            }
+            let VC = LoginController()
+            VC.delegate = self
+            let nav = UINavigationController(rootViewController: VC)
+            nav.modalPresentationStyle = .fullScreen
+            self.present(nav, animated: true, completion: nil)
         }
     }
     
@@ -65,21 +63,21 @@ class MainTabController: UITabBarController {
         
         view.backgroundColor = .white  //結局各tabのVCに隠されるのでこの設定の意味はない。コメントアウトしてもok
         tabBar.tintColor = .black  //tabBar内部のアイコンの色
-        self.delegate = self  //UITabBarControllerDelegateを使う為に必要
+        self.delegate = self  //UITabBarControllerDelegateを使う為に必要なライン
         
         let layout = UICollectionViewFlowLayout()
         let feed = templateNavigationController(unselectedImage: #imageLiteral(resourceName: "home_unselected"), selectedImage: #imageLiteral(resourceName: "home_selected"), rootViewController: FeedController(collectionViewLayout: layout))
         
         let search = templateNavigationController(unselectedImage: #imageLiteral(resourceName: "search_unselected"), selectedImage: #imageLiteral(resourceName: "search_selected"), rootViewController: SearchController(config: .all))
         
-        let imageSelector = templateNavigationController(unselectedImage: #imageLiteral(resourceName: "plus_unselected"), selectedImage: #imageLiteral(resourceName: "plus_unselected"), rootViewController: ImageSelectorController(currentUser: user)) //このページは実際には使っていない。ダミーviewを用意しても良い。
+        let dummyVC = templateNavigationController(unselectedImage: #imageLiteral(resourceName: "plus_unselected"), selectedImage: #imageLiteral(resourceName: "plus_unselected"), rootViewController: DummyVC()) //このページは実際には使っていないのでダミー。
         
         let notifications = templateNavigationController(unselectedImage: #imageLiteral(resourceName: "like_unselected"), selectedImage: #imageLiteral(resourceName: "like_selected"), rootViewController: NotificationsController())
         
         let profileController = ProfileController(user: user)
         let profile = templateNavigationController(unselectedImage: #imageLiteral(resourceName: "profile_unselected"), selectedImage: #imageLiteral(resourceName: "profile_selected"), rootViewController: profileController)
         
-        viewControllers = [feed, search, imageSelector, notifications, profile]
+        viewControllers = [feed, search, dummyVC, notifications, profile]
     }
     
     

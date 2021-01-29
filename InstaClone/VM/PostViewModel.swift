@@ -12,10 +12,10 @@ import ActiveLabel
 
 struct PostViewModel {
     
+    var post: Post
     init(post: Post) {
         self.post = post
     }
-    var post: Post
     
     
     //以下の変数は全てpostオブジェクトからのcomputed propertyである事に気づくべき
