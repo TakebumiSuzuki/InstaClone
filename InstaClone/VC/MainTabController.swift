@@ -10,12 +10,13 @@ import Firebase
 import YPImagePicker
 
 //全てのタブは個別のnavigationControllerにembedされる形で生成される。真ん中のタブのみYPImagePickerを全画面でpresentさせ、
-//写真選択後はUploadPostControllerをその上にさらに全画面presentさせる。投稿後はfeedタブを選択しつつdismiss。
+//写真選択後はYPImagePickerをdismissすると同時に、UploadPostControllerを全画面presentさせる。投稿後はfeedタブを選択しつつdismiss。
 class MainTabController: UITabBarController {
     
     // MARK: - Lifecycle
     
     //このControllerでfetchUser()を行い、userプロパティにuserを代入する事により、その他のtab生成でfetchしなくてもuserオブジェクトを渡せるようになり効率的。
+    //このuserオブジェクトのコピーはUplaodPostControllerやProfileControllerで使われる。
     //だが、structなので、パスした先でmutateした場合には、ここのuserオブジェクトは古いバージョンのままになっている事に注意。
     var user: User? {  //UserオブジェクトがfetchできたらdidSetが発動しconfigureして各TabのVCをインスタンス化する。
         didSet {
@@ -34,12 +35,16 @@ class MainTabController: UITabBarController {
     // MARK: - API
     
     func checkIfUserIsLoggedIn() {
-        if Auth.auth().currentUser == nil {   //syncなのでDispatchQueueがなくても全く問題なく動く
-            let VC = LoginController()
-            VC.delegate = self
-            let nav = UINavigationController(rootViewController: VC)
-            nav.modalPresentationStyle = .fullScreen
-            self.present(nav, animated: true, completion: nil)
+        //本来ならこのメソッドはviewDidAppearの段階で実行されるべき。その場合にはDispatchQueue.main.asyncを使う必要がない。
+        //viewDidLoad内に置いているのでDispatchQueue.main.asyncが必要。これにより本来のviewDidAppearの段階まで待ってくれるらしい。
+        if Auth.auth().currentUser == nil {
+            DispatchQueue.main.async {
+                let vc = LoginController()
+                vc.delegate = self
+                let nav = UINavigationController(rootViewController: vc)
+                nav.modalPresentationStyle = .fullScreen
+                self.present(nav, animated: true, completion: nil)
+            }
         }
     }
     
@@ -74,8 +79,7 @@ class MainTabController: UITabBarController {
         
         let notifications = templateNavigationController(unselectedImage: #imageLiteral(resourceName: "like_unselected"), selectedImage: #imageLiteral(resourceName: "like_selected"), rootViewController: NotificationsController())
         
-        let profileController = ProfileController(user: user)
-        let profile = templateNavigationController(unselectedImage: #imageLiteral(resourceName: "profile_unselected"), selectedImage: #imageLiteral(resourceName: "profile_selected"), rootViewController: profileController)
+        let profile = templateNavigationController(unselectedImage: #imageLiteral(resourceName: "profile_unselected"), selectedImage: #imageLiteral(resourceName: "profile_selected"), rootViewController: ProfileController(user: user))
         
         viewControllers = [feed, search, dummyVC, notifications, profile]
     }
@@ -99,6 +103,7 @@ extension MainTabController: AuthenticationDelegate {  //loginControllerなど�
     
     func authenticationDidComplete() {
         fetchUser()  //firebaseでユーザーが切り替わった時に前の情報がそのまま表示されてしまう問題を解決する為。
+        //これにより新しいuserが代入され、didSetが呼ばれ、新たな[viewControllers]が作られる。この時、前のセットは全てdeinitされるかと。
         self.dismiss(animated: true, completion: nil)
     }
 }
@@ -127,7 +132,7 @@ extension MainTabController: UITabBarControllerDelegate {
             picker.modalPresentationStyle = .fullScreen
             present(picker, animated: true, completion: nil)
 
-            didFinishPickingMedia(picker)  //上にあるメソッドの事。
+            didFinishPickingMedia(picker)  //下にあるメソッドの事。
 
             return false
             //ここはtrueにしても同じ結果になると一見思われるが、trueだと画像選択をキャンセルした後に真ん中のtabのまま
@@ -137,19 +142,19 @@ extension MainTabController: UITabBarControllerDelegate {
         return true
     }
     
-    func didFinishPickingMedia(_ picker: YPImagePicker) {
+    private func didFinishPickingMedia(_ picker: YPImagePicker) {
         
         picker.didFinishPicking { items, _ in
-            picker.dismiss(animated: false) {  //一度ここでpickerをdismissし、その後新たにUploadPostをpresentしている。
+            picker.dismiss(animated: false) {  //一度ここでpickerをdismissし、その後新たにUploadPostを全画面presentしている。
                 guard let selectedImage = items.singlePhoto?.image else { return }
 
-                let VC = UploadPostController()
+                let vc = UploadPostController()
                 //UploadPostController(selectedImage: selectedImage)のようにカスタムイニシャライザを使うようにしても良いとの事
-                VC.selectedImage = selectedImage
-                VC.delegate = self  //shareボタンを押した後に、APIでポストを保存し、このページで残る処理を行う。下のメソッド
-                VC.currentUser = self.user
+                vc.selectedImage = selectedImage
+                vc.delegate = self  //shareボタンを押した後に、APIでポストを保存し、このページで残る処理を行う。下のメソッド
+                vc.currentUser = self.user
 
-                let nav = UINavigationController(rootViewController: VC)  //UploadPostControllerを入れたnavをpresent
+                let nav = UINavigationController(rootViewController: vc)
                 nav.modalPresentationStyle = .fullScreen
                 self.present(nav, animated: false, completion: nil)
             }
@@ -159,11 +164,11 @@ extension MainTabController: UITabBarControllerDelegate {
 
 // MARK: - UploadPostControllerDelegate
 
-extension MainTabController: UploadPostControllerDelegate {  //ポストした後に呼ばれる
+extension MainTabController: UploadPostControllerDelegate {  //ポストした後に呼ばれる。feedページを表示してポストをrefresh。
     
     func controllerDidFinishUploadingPost(_ controller: UploadPostController) {
         
-        selectedIndex = 0  //feedページを選択して
+        selectedIndex = 0  //feedページを選択
         controller.dismiss(animated: true, completion: nil)  //controllerのところはself.でもok.よって上の引数も実はいらない。
         
         //feed画面でポストをアップデート。notificationCenterを使っても良いかと。

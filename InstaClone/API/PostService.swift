@@ -11,26 +11,42 @@ import Firebase
 
 struct PostService {
     
-    //[重要]投稿メソッド。Postモデルと見比べてみる事
-    static func uploadPost(caption: String, image: UIImage, user: User, completion: @escaping(FirestoreCompletion)) {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+    //[重要]投稿メソッド。Postモデルと見比べてみる事-------------------------------------------
+    static func uploadPost(caption: String, image: UIImage, hashtags: [String], user: User, completion: @escaping (FirestoreCompletion)) {
+        guard let uid = Auth.auth().currentUser?.uid else { return }  //Userがあるから必要ないのでは？
         
-        //下の辞書の中に保存すべきpostID情報が入ってないがこれはローカルのみで扱う。hashTagはどうなってる?
-        ImageUploader.uploadImage(image: image, imageKind: .feedImage) { (result) in
+        ImageUploader.uploadImage(image: image, imageKind: .feedImage) { (result) in  //投稿画像アップロード
             switch result{
             case .failure(let error):
-                return
+                completion(error)
             case .success(let imageUrl):
+                let docNewRef = COLLECTION_POSTS.document()
+                let timestamp = Timestamp(date: Date())
                 let data = ["caption": caption,
-                            "timestamp": Timestamp(date: Date()),
+                            "timestamp": timestamp,
                             "likes": 0,
                             "imageUrl": imageUrl,
                             "ownerUid": uid,
                             "ownerImageUrl": user.profileImageUrl,
-                            "ownerUsername": user.username] as [String : Any]
-                            
-                COLLECTION_POSTS.addDocument(data: data, completion: completion)
-            
+                            "ownerUsername": user.username,
+                            "hashtags": hashtags,
+                            "postId": docNewRef.documentID] as [String : Any]
+                docNewRef.setData(data, completion: completion)           //PostオブジェクトをPostコレクションにセーブ
+                
+                COLLECTION_FOLLOWERS.document(uid).collection("user-followers").getDocuments {(snapshot, error) in//フォロワーget
+                    if let error = error{
+                        print("Error fetching followers snapshot. \(error.localizedDescription)")
+                        completion(error)
+                    }
+                    snapshot?.documents.forEach({ (document) in
+                        
+                        let followerUid = document.documentID         //フォロワーのuser-feedにドキュメント格納。
+                        COLLECTION_USERS.document(followerUid).collection("user-feed").document(docNewRef.documentID)
+                            .setData(["timestamp": timestamp, "postID": docNewRef.documentID], completion: completion)
+                    })
+                    COLLECTION_USERS.document(uid).collection("user-feed").document(docNewRef.documentID)
+                        .setData(["timestamp": timestamp, "postID": docNewRef.documentID], completion: completion)
+                }
             }
         }
     }
@@ -45,7 +61,7 @@ struct PostService {
         }
     }
     
-    //ProfileController下部のpost欄からPaginateion必要かと。-----------------------------------------------------------------------
+    //特定のuidのポストを時系列に。ProfileController下部のpost欄から。Paginateion必要かと。--------------------------------------------
     static func fetchPosts(forUser uid: String, completion: @escaping (Result<[Post], Error>) -> Void) {
         let query = COLLECTION_POSTS.whereField("ownerUid", isEqualTo: uid)
         
@@ -60,24 +76,31 @@ struct PostService {
         }
     }
     
-    static func fetchPost(withPostId postId: String, completion: @escaping(Post) -> Void) {
-        COLLECTION_POSTS.document(postId).getDocument { snapshot, _ in
+    //FeedControllerから。単体PostIDからPost作成-------------------------------------------------------------
+    static func fetchPost(withPostId postId: String, completion: @escaping (Result<(Post), Error>) -> Void) {
+        
+        COLLECTION_POSTS.document(postId).getDocument { snapshot, error in
+            if let error = error{
+                completion(.failure(error))
+            }
             guard let snapshot = snapshot else { return }
             guard let data = snapshot.data() else { return }
             let post = Post(postId: snapshot.documentID, dictionary: data)
-            completion(post)
+            completion(.success(post))
         }
     }
     
+    //最後にDEBUG
     static func fetchPosts(forHashtag hashtag: String, completion: @escaping([Post]) -> Void) {
         var posts = [Post]()
         COLLECTION_HASHTAGS.document(hashtag).collection("posts").getDocuments { snapshot, error in
             guard let documents = snapshot?.documents else { return }
             
-            documents.forEach({ fetchPost(withPostId: $0.documentID) { post in
-                posts.append(post)
-                completion(posts)
-            } })
+            
+//            documents.forEach({ fetchPost(withPostId: $0.documentID) { post in
+//                posts.append(post)
+//                completion(posts)
+//            } })
         }
     }
     
@@ -102,7 +125,8 @@ struct PostService {
         }
     }
     
-    static func checkIfUserLikedPost(post: Post, completion: @escaping(Bool) -> Void) {
+    //-----------------------------------------------------------------------------------------
+    static func checkIfUserLikedPost(post: Post, completion: @escaping (Bool) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         
         //user-likesの中に個別のからのpostIDを作るのは一見コストがかかるように見えるがexistsを使う限り無料なのでむしろ効率的かと
@@ -112,21 +136,37 @@ struct PostService {
         }
     }
     
-    //12章で作ったメソッド。Cloud functionで裏で自動仕分け後、userのfeedコレクションから自分用feed postsを取り出す。
-    static func fetchFeedPosts(completion: @escaping([Post]) -> Void) {
+    //userのfeedコレクションから自分用feed postsを取り出す。---------------------------------------------
+    static func fetchFeedPosts(completion: @escaping (Result<[Post], Error>) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         var posts = [Post]()
         
         COLLECTION_USERS.document(uid).collection("user-feed").getDocuments { snapshot, error in
+            if let error = error{ completion(.failure(error)) }
+            let group = DispatchGroup()
             
             snapshot?.documents.forEach({ document in
-                fetchPost(withPostId: document.documentID) { post in
-                    posts.append(post)
-                    posts.sort(by: { $0.timestamp.seconds > $1.timestamp.seconds })
-                    
-                    completion(posts)
+                group.enter()
+                fetchPost(withPostId: document.documentID) { (result) in
+                    switch result{
+                    case .failure(let error):
+                        print("DEBUG: Error fetching a single Post \(error)")
+                        group.leave()
+                    case .success(let post):
+                        var postMutable = post
+                        COLLECTION_USERS.document(uid).collection("user-likes").document(post.postId).getDocument { (snapshot, _) in
+                            guard let didLike = snapshot?.exists else { return }
+                            postMutable.didLike = didLike
+                            posts.append(postMutable)
+                            group.leave()
+                        }
+                    }
                 }
             })
+            group.notify(queue: .main) {
+                posts.sort(by: { $0.timestamp.seconds > $1.timestamp.seconds })
+                completion(.success(posts))
+            }
         }
     }
     

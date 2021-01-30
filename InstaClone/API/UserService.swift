@@ -12,11 +12,11 @@ typealias FirestoreCompletion = (Error?) -> Void
 
 struct UserService {
     
-    ///uid → comp(user)  profileControllerから-------------------------------------------------------------------------------------------------
-    static func fetchUser(withUid uid: String, completion: @escaping(User) -> Void) {
+    ///uid → comp(user)  profileController、feedControllerから。エラーハンドリングは良いかと。-----------------------------------------------------------------------------------
+    static func fetchUser(withUid uid: String, completion: @escaping (User) -> Void) {
         
         COLLECTION_USERS.document(uid).getDocument { snapshot, error in
-            guard let dictionary = snapshot?.data() else { return }
+            guard let dictionary = snapshot?.data() else { return }  //errorの時はここでreturnになる。
             let user = User(dictionary: dictionary)
             completion(user)
         }
@@ -90,7 +90,7 @@ struct UserService {
         }
     }
     
-    ///プロフィールページのuid → currentUIDがfollowしてるかどうかのBool--------------------------------------------------------------------------------------
+//  uid → currentUIDがfollowしてるかどうか。profileControllerとFeedControllerから。エラーハンドリングの必要ないのでは?----------------
     static func checkIfUserIsFollowed(uid: String, completion: @escaping (Bool) -> Void) {
         guard let currentUid = Auth.auth().currentUser?.uid else { return }
         

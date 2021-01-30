@@ -137,11 +137,24 @@ extension NotificationsController: NotificationCellDelegate {
     func cell(_ cell: NotificationCell, wantsToViewPost postId: String) {
         showLoader(true)
 
-        PostService.fetchPost(withPostId: postId) { post in
-            self.showLoader(false)
-            let controller = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
-            controller.post = post
-            self.navigationController?.pushViewController(controller, animated: true)
+        PostService.fetchPost(withPostId: postId) { (result) in
+            switch result{
+            case .failure(let error):
+                print("DEBUG: Error fetching a single Post \(error)")
+                self.showLoader(false)
+            case .success(let post):
+                self.showLoader(false)
+                let controller = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
+                controller.post = post
+                self.navigationController?.pushViewController(controller, animated: true)
+            
+            }
+            
+            
+            
+            
+            
+            
         }
     }
 }

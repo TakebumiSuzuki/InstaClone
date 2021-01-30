@@ -67,7 +67,8 @@ class EditProfileController: UITableViewController {
     func configureNavigationBar() {
         navigationItem.title = "Edit Profile"
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(handleCancel))
-        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .save, target: self, action: #selector(handleSave))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Save", style: .done, target: self, action: #selector(handleSave))
+        //barButtonSystemItemでも通常のtitleでもどちらもほぼ同じ。
         navigationItem.rightBarButtonItem?.isEnabled = false
     }
     

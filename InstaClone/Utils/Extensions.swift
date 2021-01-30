@@ -45,6 +45,7 @@ extension UIViewController {
         alert.addAction(action)
         present(alert, animated: true, completion: nil)
     }
+    
 }
 
 extension UITextField {
@@ -64,6 +65,21 @@ extension String{
         let emailPred = NSPredicate(format:"SELF MATCHES %@", emailRegEx)
         return emailPred.evaluate(with: self)
     }
+    
+    
+    func getHashtags() -> [String]{
+        
+        if let regex = try? NSRegularExpression(pattern: "#[\\p{L}0-9_]*", options: .caseInsensitive){
+            
+            let string = self as NSString
+            
+            return regex.matches(in: self, options: [], range: NSRange(location: 0, length: string.length)).map {
+                string.substring(with: $0.range).replacingOccurrences(of: "#", with: "").lowercased()
+            }
+        }
+        return []
+    }
+    
 }
 
 

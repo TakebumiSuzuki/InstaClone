@@ -12,7 +12,7 @@ protocol UploadPostControllerDelegate: class {
     func controllerDidFinishUploadingPost(_ controller: UploadPostController)
 }
 
-//真ん中のtabがタップされて写真を選択した後に、MainTabController上で、navBar内に格納されfull screenでpresentされる。
+//真ん中のtabがタップされて写真を選択した後に、MainTabController上で、navBar内に格納され全画面presentされる。
 class UploadPostController: UIViewController {
     
     // MARK: - Properties
@@ -23,6 +23,7 @@ class UploadPostController: UIViewController {
         didSet { photoImageView.image = selectedImage }
     }
     var currentUser: User? //ここに大きな問題がある。このuserはMainTabからパスされたコピーであり、profileでアップデートしたuserとは異なる。
+    //ただ、このページではuserがmutateされることはないので実際には問題にならないかと。
     //以上の3つの変数はインスタンス化の時にMainTabControllerから代入される
     
     private let photoImageView: UIImageView = {
@@ -34,9 +35,9 @@ class UploadPostController: UIViewController {
     
     private lazy var captionTextView: InputTextView = {
         let tv = InputTextView()
-        tv.font = UIFont.systemFont(ofSize: 16)
+        tv.font = UIFont.systemFont(ofSize: 18)
         tv.placeholderText = "Enter caption.."
-        tv.placeholderShouldCenter = false  //"Enter caption.."が左上部に表示される
+        tv.placeholderShouldCenter = false  //内部に作った"Enter caption.."のlabelが左上にピンされる
         tv.delegate = self   //一番下にある、文字入力するたびに呼ばれるUITextViewDelegateを使用する為
         return tv
     }()
@@ -56,6 +57,10 @@ class UploadPostController: UIViewController {
         configureUI()
     }
     
+    deinit {
+        print("UPLOAD POST CONTROLLER DEINITING______________________")
+    }
+    
     
     // MARK: - Helpers
     
@@ -72,7 +77,7 @@ class UploadPostController: UIViewController {
         
         view.addSubview(photoImageView)
         photoImageView.setDimensions(height: 180, width: 180)
-        photoImageView.anchor(top: view.safeAreaLayoutGuide.topAnchor, paddingTop: 8)
+        photoImageView.anchor(top: view.safeAreaLayoutGuide.topAnchor, paddingTop: 24)
         photoImageView.centerX(inView: view)
         photoImageView.layer.cornerRadius = 10
         
@@ -97,20 +102,21 @@ class UploadPostController: UIViewController {
         guard let image = selectedImage else { return }
         guard let caption = captionTextView.text else { return }
         guard let user = currentUser else { return }
+        let hashtags = caption.getHashtags().filter{!$0.isEmpty}
         
         showLoader(true)
-        
-        //このメソッドの呼び出し先のImageUploaderでprofile_imageパスが使われてしまっている。機能に影響はないと思うが直すべき。
-        PostService.uploadPost(caption: caption, image: image, user: user) { error in
+        PostService.uploadPost(caption: caption, image: image, hashtags: hashtags, user: user) { error in
             self.showLoader(false)
 
             if let error = error {
                 print("DEBUG: Failed to upload post with error \(error.localizedDescription)")
+                self.showSimpleAlert(title: "Failed to upload post", message: "", actionTitle: "ok")
                 return
             }
-            //ここにnotificationCenterを記述してfeedControllerがreloadできるようにし、下のdelegateはhandlerの外に出すべき。
-            self.delegate?.controllerDidFinishUploadingPost(self)
+            //ここにnotificationCenterを記述してfeedControllerがreloadできるようにし、下のdelegateはhandlerの外に出すべきか。
+            
         }
+        self.delegate?.controllerDidFinishUploadingPost(self)
     }
 }
 
@@ -120,14 +126,12 @@ class UploadPostController: UIViewController {
 extension UploadPostController: UITextViewDelegate {
     
     func textViewDidChange(_ textView: UITextView) {
-        checkMaxLength(textView)
+        
+        if textView.text.count > 100 {
+            textView.deleteBackward()  //このメソッドは覚えるしかない。
+        }
         let count = textView.text.count
         characterCountLabel.text = "\(count)/100"
     }
     
-    func checkMaxLength(_ textView: UITextView) {
-        if (textView.text.count) > 100 {
-            textView.deleteBackward()  //このメソッドは覚えるしかない。
-        }
-    }
 }

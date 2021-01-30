@@ -29,12 +29,12 @@ class FeedController: UICollectionViewController {
         super.viewDidLoad()
         
         configureUI()
-        fetchPosts()   //単体ポスト表示の場合はここはすぐにreturnされ実行されない
         
-        if post != nil {    //単体ポスト表示の場合はこれが実行される
-            checkIfUserLikedPosts()
+        if post == nil{
+            fetchPosts()   //マルチポストモード
+        }else{
+            checkIfUserLikedPost()  //単体ポストモード
         }
-        //いずれにしろ、どのケースでも各postには必ずdidLikeが代入される。そしてdidSetでreloadData()
     }
     
     // MARK: - Helpers
@@ -45,7 +45,7 @@ class FeedController: UICollectionViewController {
         collectionView.register(FeedCell.self, forCellWithReuseIdentifier: reuseIdentifier)
         
         if post == nil {  //単体ポストでない場合、つまり通常のfeed画面の場合は左右上にログアウトとメッセージへのリンクが付く
-            navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Logout",style: .plain,target: self,
+            navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Logout",style: .plain, target: self,
                                                                action: #selector(handleLogout))
             navigationItem.rightBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "send2"), style: .plain, target: self,
                                                                 action: #selector(showMessages))
@@ -61,53 +61,83 @@ class FeedController: UICollectionViewController {
     // MARK: - Actions
     
     @objc func handleLogout() {  //Authからサインアウトした後にLoginControllerを、MainTabControllerをdelegateとしてpresent
-        do {
-            try Auth.auth().signOut()
-            let controller = LoginController()
-            controller.delegate = self.tabBarController as? MainTabController
-            let nav = UINavigationController(rootViewController: controller)
-            nav.modalPresentationStyle = .fullScreen
-            self.present(nav, animated: true, completion: nil)
-        } catch {
-            print("DEBUG: Failed to sign out")
+        
+        let alert = UIAlertController(title: "Would you like to Log out?", message: "", preferredStyle: .alert)
+        let action1 = UIAlertAction(title: "Log out", style: .default) { (action) in
+            do {
+                try Auth.auth().signOut()
+                let vc = LoginController()
+                vc.delegate = self.tabBarController as? MainTabController
+                let nav = UINavigationController(rootViewController: vc)
+                nav.modalPresentationStyle = .fullScreen
+                self.present(nav, animated: true, completion: nil)
+            } catch {
+                print("DEBUG: Failed to sign out")
+            }
         }
+        let action2 = UIAlertAction(title: "Cancel", style: .cancel) { (action) in
+        }
+        alert.addAction(action1)
+        alert.addAction(action2)
+        present(alert, animated: true, completion: nil)
     }
     
     @objc func showMessages() {   //ConversationsControllerをpush
-        let controller = ConversationsController()
-        navigationController?.pushViewController(controller, animated: true)
+        let vc = ConversationsController()
+        navigationController?.pushViewController(vc, animated: true)
     }
     
-    @objc func handleRefresh() {  //単体ポストの時にもrefresherが起動する仕様になってしまっているので、バグを生むかと。
-        posts.removeAll()
-        fetchPosts()
+    @objc func handleRefresh() {
+        if post == nil {  //マルチポストモード
+            fetchPosts()
+        }else{            //単体ポストモード
+            updatePost()
+        }
     }
     
     
     // MARK: - API
     
     func fetchPosts() {
-        guard post == nil else { return }   //postがnilでない場合、つまり単体ポストの場合には実行されない
-        
-        //user collection下の各userドキュメントにuser-feedというサブcollectionを作り、そこにdocumentIDのみの空ドキュメントを格納している。
-        PostService.fetchFeedPosts { posts in
-            self.posts = posts
-            self.checkIfUserLikedPosts()
-            self.collectionView.refreshControl?.endRefreshing()
+        PostService.fetchFeedPosts { result in   //自分のuidからfeed postを取得すると同時にdidLikeも代入。
+            switch result{
+            case .failure(let error):
+                print("DEBUG: Failed to fetch posts \(error)")
+                self.showSimpleAlert(title: "Server error..Failed to download feed posts.", message: "", actionTitle: "ok")
+                self.collectionView.refreshControl?.endRefreshing()
+            case .success(let posts):
+                if posts.isEmpty{
+                    self.showSimpleAlert(title: "Search and Follow your friends to see posts!!", message: "", actionTitle: "ok")
+                    return
+                }
+                self.posts = posts
+                self.collectionView.refreshControl?.endRefreshing()
+                
+            }
         }
     }
     
-    func checkIfUserLikedPosts() {
-        if let post = post {      //単体ポストの場合には上のfetchPosts()は実行されず、スキップしてこれが実行される
-            PostService.checkIfUserLikedPost(post: post) { didLike in
-                self.post?.didLike = didLike
-            }
-        } else {   //通常のfeedページの場合。
-            posts.forEach { post in  //for n in 0..<post.count{}の構文を使えばnをindex numberにできるので下のfirstIndexを使わなくても良いかと。
-                PostService.checkIfUserLikedPost(post: post) { didLike in
-                    if let index = self.posts.firstIndex(where: { $0.postId == post.postId }) { //$0はオリジナルのposts配列の各要素を表す。
-                        self.posts[index].didLike = didLike
-                    }
+    func checkIfUserLikedPost() {     //viewDidLoadから呼ばれる。
+        guard let post = post else {return}
+        
+        PostService.checkIfUserLikedPost(post: post) { didLike in
+            self.post?.didLike = didLike
+        }
+    }
+    
+    func updatePost(){    //refresherから呼ばれる。
+        guard let post = post else {return}
+        
+        PostService.fetchPost(withPostId: post.postId) { (result) in
+            switch result{
+            case .failure(_):
+                print("DEBUG Error fetching single post")  //この場合にはalertを表示させる必要ないかと。
+                self.collectionView.refreshControl?.endRefreshing()
+            case .success(_):
+                self.post = post
+                PostService.checkIfUserLikedPost(post: post) { didLike in  //とりあえずここはエラーハンドリングなしで。
+                    self.post?.didLike = didLike
+                    self.collectionView.refreshControl?.endRefreshing()
                 }
             }
         }
@@ -123,6 +153,7 @@ class FeedController: UICollectionViewController {
     }
 }
 
+
 // MARK: - UICollectionViewDataSource
 
 extension FeedController {
@@ -136,16 +167,17 @@ extension FeedController {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! FeedCell
         cell.delegate = self
         
-        handleHashtagTapped(forCell: cell)  //このページ一番下のメソッド。各cell内のcaptionLabelにhashtag、mentionをタップした時の
-        handleMentionTapped(forCell: cell)  //動作をattachする。hashitagをタップするとHashtagPostControllerがpushされる。
-        //このタイミングで(cell上ではなくこのFeedController上で)この作業をする事により、delegateを作る手間を省ける。
+        handleHashtagTapped(forCell: cell)
+        handleMentionTapped(forCell: cell)
+        handleURLTapped(forCell: cell)
+        //このページ一番下のメソッド。各cell内のcaptionLabelにhashtag、mentionをタップした時の動作をattachする。hashtagをタップすると
+        //HashtagPostControllerがpushされる。このタイミングで(cell上ではなくこのFeedController上で)この作業をする事により、delegateを作る手間を省ける。
         
         if let post = post {
             cell.viewModel = PostViewModel(post: post)
         } else {
             cell.viewModel = PostViewModel(post: posts[indexPath.row])
         }
-        
         return cell
     }
 }
@@ -169,48 +201,46 @@ extension FeedController: UICollectionViewDelegateFlowLayout {
 
 extension FeedController: FeedCellDelegate {
     
+    //プロフィール表示。特にエラーハンドリングの必要ないかと。
     func cell(_ cell: FeedCell, wantsToShowProfileFor uid: String) {
         
         UserService.fetchUser(withUid: uid) { user in
-            let controller = ProfileController(user: user)
-            self.navigationController?.pushViewController(controller, animated: true)
+            let vc = ProfileController(user: user)
+            self.navigationController?.pushViewController(vc, animated: true)
         }
     }
     
-    //オプションボタンが押された時のdelegateメソッド。自分のポストか他人のポストかによって表示を変えている
+    //オプションボタンが押された時。自分のポストか他人のポストかによって表示を変えている
     func cell(_ cell: FeedCell, wantsToShowOptionsForPost post: Post) {
         
         let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
         
-        let editPostAction = UIAlertAction(title: "Edit Post", style: .default) { _ in //自分の投稿の場合
-            //エディット画面のimplementationが抜けている。
-            print("DEBUG: Edit post")
-        }
-        
+//        let editPostAction = UIAlertAction(title: "Edit Post", style: .default) { _ in //自分の投稿の場合
+//            //エディット画面のimplementationが抜けている。
+//            print("DEBUG: Edit post")
+//        }
         let deletePostAction = UIAlertAction(title: "Delete Post", style: .destructive) { _ in //自分の投稿の場合
             self.deletePost(post)
         }
-        
         let unfollowAction = UIAlertAction(title: "Unfollow", style: .default) { _ in
             self.showLoader(true)
             UserService.unfollow(uid: post.ownerUid) { _ in
                 self.showLoader(false)
             }
         }
-        
         let followAction = UIAlertAction(title: "Follow", style: .default) { _ in
             self.showLoader(true)
             UserService.follow(uid: post.ownerUid) { _ in
                 self.showLoader(false)
             }
         }
-        
         let cancelAction =  UIAlertAction(title: "Cancel", style: .cancel, handler: nil)  //キャンセルはどの場合でも表示される
         
+        
         if post.ownerUid == Auth.auth().currentUser?.uid { //自分のポストにはeditとdelete
-            alert.addAction(editPostAction)
+//            alert.addAction(editPostAction)
             alert.addAction(deletePostAction)
-        } else {   //自分のポストでない場合にはfollowしているかしていないかでunfollow/followを変える。
+        } else {   //自分のポストでない場合にはさらにfollowしているかしていないかでunfollow/followを変える。
             UserService.checkIfUserIsFollowed(uid: post.ownerUid) { isFollowed in
                 if isFollowed {
                     alert.addAction(unfollowAction)
@@ -255,16 +285,16 @@ extension FeedController: FeedCellDelegate {
         }
     }
     
+    
     func cell(_ cell: FeedCell, wantsToShowCommentsFor post: Post) {
-        
-        let controller = CommentController(post: post)
-        navigationController?.pushViewController(controller, animated: true)
+        let vc = CommentController(post: post)
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     
     func cell(_ cell: FeedCell, wantsToViewLikesFor postId: String) {
-        let controller = SearchController(config: .likes(postId))
-        navigationController?.pushViewController(controller, animated: true)
+        let vc = SearchController(config: .likes(postId))
+        navigationController?.pushViewController(vc, animated: true)
     }
 }
 
@@ -297,4 +327,12 @@ extension FeedController {
             }
         }
     }
+    
+    func handleURLTapped(forCell cell: FeedCell) {
+        
+        cell.captionLabel.handleURLTap { (url) in
+            print("URL Tapped")
+        }
+    }
+    
 }

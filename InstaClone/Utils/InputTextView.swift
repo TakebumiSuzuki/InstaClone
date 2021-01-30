@@ -7,7 +7,7 @@
 
 import UIKit
 //このカスタムサブクラスはUploadPostControllerと、多分チャットやコメント機能のコントローラーからも使われる。
-//UITextViewにはplaceHolderがないので、UILabelを内部に加えたサブクラスを作る。また、UILabelのconstraintを選択式で設定できるように。
+//UITextViewにはないplaceHolderのUILabelを加え、そのconstraintを選択できるようにするのがこのカスタムサブクラスの目的。
 class InputTextView: UITextView {
     
     // MARK: - Properties
@@ -24,10 +24,10 @@ class InputTextView: UITextView {
     
     var placeholderShouldCenter = true {  //placeholderの位置を２バージョン。どちらでも選択できるように。
         didSet {
-            if placeholderShouldCenter {
+            if placeholderShouldCenter {  //verticallyに真ん中になるように
                 placeholderLabel.anchor(left: leftAnchor, right: rightAnchor, paddingLeft: 8)
                 placeholderLabel.centerY(inView: self)
-            } else {
+            } else {  //上左からピンする
                 placeholderLabel.anchor(top: topAnchor, left: leftAnchor, paddingTop: 6, paddingLeft: 8)
             }
         }
@@ -35,13 +35,13 @@ class InputTextView: UITextView {
     
     // MARK: - Lifecycle
     
-    override init(frame: CGRect, textContainer: NSTextContainer?) {
+    override init(frame: CGRect, textContainer: NSTextContainer?) { //この正式イニシャライザは使っていない。NSTextContainerについて不明。
         super.init(frame: frame, textContainer: textContainer)
         
         addSubview(placeholderLabel)
         
         //以下はUITextViewオブジェクトが自動ポストするnotification。知らないと書けないコード。textFieldでも同様のものが存在する。
-        //機能的にはUITextViewDelegateのdidChangeと同等。
+        //機能的にはUITextViewDelegateのdidChangeと同等。下にあるplacehalderLabel.isHiddenをコントロールする。
         NotificationCenter.default.addObserver(self, selector: #selector(handleTextDidChange),
                                                name: UITextView.textDidChangeNotification, object: nil)
     }
