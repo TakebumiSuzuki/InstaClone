@@ -17,7 +17,7 @@ class FeedController: UICollectionViewController {
     
     // MARK: - Lifecycle
     
-    private var posts = [Post]() {   //通常のfeed画面にはこちらの変数を使う
+    private var posts = [Post](){   //通常のfeed画面にはこちらの変数を使う
         didSet { collectionView.reloadData() }
     }
     
@@ -33,7 +33,7 @@ class FeedController: UICollectionViewController {
         if post == nil{
             fetchPosts()   //マルチポストモード
         }else{
-            checkIfUserLikedPost()  //単体ポストモード
+            checkSinglePostLiked()  //単体ポストモード
         }
     }
     
@@ -44,13 +44,13 @@ class FeedController: UICollectionViewController {
         collectionView.backgroundColor = .white
         collectionView.register(FeedCell.self, forCellWithReuseIdentifier: reuseIdentifier)
         
+        navigationItem.title = "Feed"
         if post == nil {  //単体ポストでない場合、つまり通常のfeed画面の場合は左右上にログアウトとメッセージへのリンクが付く
-            navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Logout",style: .plain, target: self,
+            navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Logout", style: .plain, target: self,
                                                                action: #selector(handleLogout))
             navigationItem.rightBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "send2"), style: .plain, target: self,
                                                                 action: #selector(showMessages))
         }
-        navigationItem.title = "Feed"
         
         let refresher = UIRefreshControl()  //refresherControlについて他の導入例を見て調べる事。UIControllのサブクラス。
         refresher.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
@@ -96,31 +96,32 @@ class FeedController: UICollectionViewController {
     }
     
     
+    
     // MARK: - API
     
     func fetchPosts() {
         PostService.fetchFeedPosts { result in   //自分のuidからfeed postを取得すると同時にdidLikeも代入。
             switch result{
             case .failure(let error):
+                self.collectionView.refreshControl?.endRefreshing()
                 print("DEBUG: Failed to fetch posts \(error)")
                 self.showSimpleAlert(title: "Server error..Failed to download feed posts.", message: "", actionTitle: "ok")
-                self.collectionView.refreshControl?.endRefreshing()
+                
             case .success(let posts):
+                self.collectionView.refreshControl?.endRefreshing()
                 if posts.isEmpty{
                     self.showSimpleAlert(title: "Search and Follow your friends to see posts!!", message: "", actionTitle: "ok")
                     return
                 }
                 self.posts = posts
-                self.collectionView.refreshControl?.endRefreshing()
-                
             }
         }
     }
     
-    func checkIfUserLikedPost() {     //viewDidLoadから呼ばれる。
-        guard let post = post else {return}
+    func checkSinglePostLiked() {     //viewDidLoadから呼ばれる。
+        guard let post = post else { return }
         
-        PostService.checkIfUserLikedPost(post: post) { didLike in
+        PostService.checkIfUserLikedPost(post: post) { didLike in //errorの場合はデフォルトのfalseのままになる。
             self.post?.didLike = didLike
         }
     }
@@ -133,8 +134,8 @@ class FeedController: UICollectionViewController {
             case .failure(_):
                 print("DEBUG Error fetching single post")  //この場合にはalertを表示させる必要ないかと。
                 self.collectionView.refreshControl?.endRefreshing()
-            case .success(_):
-                self.post = post
+            case .success(let updatedPost):
+                self.post = updatedPost
                 PostService.checkIfUserLikedPost(post: post) { didLike in  //とりあえずここはエラーハンドリングなしで。
                     self.post?.didLike = didLike
                     self.collectionView.refreshControl?.endRefreshing()
@@ -201,16 +202,16 @@ extension FeedController: UICollectionViewDelegateFlowLayout {
 
 extension FeedController: FeedCellDelegate {
     
-    //プロフィール表示。特にエラーハンドリングの必要ないかと。
+    //プロフィール表示。
     func cell(_ cell: FeedCell, wantsToShowProfileFor uid: String) {
         
-        UserService.fetchUser(withUid: uid) { user in
+        UserService.fetchUser(withUid: uid) { user in  //特にエラーハンドリングの必要ないかと。
             let vc = ProfileController(user: user)
             self.navigationController?.pushViewController(vc, animated: true)
         }
     }
     
-    //オプションボタンが押された時。自分のポストか他人のポストかによって表示を変えている
+    //オプションボタン。自分のポストか他人のポストかによって表示を変えている
     func cell(_ cell: FeedCell, wantsToShowOptionsForPost post: Post) {
         
         let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
@@ -222,13 +223,13 @@ extension FeedController: FeedCellDelegate {
         let deletePostAction = UIAlertAction(title: "Delete Post", style: .destructive) { _ in //自分の投稿の場合
             self.deletePost(post)
         }
-        let unfollowAction = UIAlertAction(title: "Unfollow", style: .default) { _ in
+        let unfollowAction = UIAlertAction(title: "Unfollow \(post.ownerUsername)?", style: .default) { _ in
             self.showLoader(true)
             UserService.unfollow(uid: post.ownerUid) { _ in
                 self.showLoader(false)
             }
         }
-        let followAction = UIAlertAction(title: "Follow", style: .default) { _ in
+        let followAction = UIAlertAction(title: "Follow \(post.ownerUsername)?", style: .default) { _ in
             self.showLoader(true)
             UserService.follow(uid: post.ownerUid) { _ in
                 self.showLoader(false)
@@ -237,7 +238,7 @@ extension FeedController: FeedCellDelegate {
         let cancelAction =  UIAlertAction(title: "Cancel", style: .cancel, handler: nil)  //キャンセルはどの場合でも表示される
         
         
-        if post.ownerUid == Auth.auth().currentUser?.uid { //自分のポストにはeditとdelete
+        if post.ownerUid == Auth.auth().currentUser?.uid { //自分のポストにはeditとdeleteとcancel
 //            alert.addAction(editPostAction)
             alert.addAction(deletePostAction)
         } else {   //自分のポストでない場合にはさらにfollowしているかしていないかでunfollow/followを変える。
@@ -254,33 +255,27 @@ extension FeedController: FeedCellDelegate {
         present(alert, animated: true, completion: nil)
     }
     
-    func cell(_ cell: FeedCell, didLike post: Post) {
+    func cell(_ cell: FeedCell, didLike post: Post) {  //postの引数は使っていないのでなくしてもよし。
         
         guard let tab = tabBarController as? MainTabController else { return }
         guard let user = tab.user else { return }
-        guard let ownerUid = cell.viewModel?.post.ownerUid else { return }
         
-        //ここで注意すべきは、引数のpostはcell.viewModel?.postとは別の、コピーされたオブジェクトである事。letとして扱われ、immutable。
-        //PostServiceのところの引数でpostを使っているが、実はこのブロック全体を通してpostの引数は必要なく、全てcell.viewModel?.postで問題ない。
-        cell.viewModel?.post.didLike.toggle()  //これによりcellのconfigure()がinvokeされハート表示が自動的に更新される。
-        //ちなみに引数として持ち込まれたもの(ここではpost)は通常値渡しで、尚且つletとして扱われる。参照渡しなど、関連事項検索の事。
-        if post.didLike {
-            PostService.unlikePost(post: post) { _ in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
-                cell.likeButton.setImage(#imageLiteral(resourceName: "like_unselected"), for: .normal)  //ここからの２行は実は必要ない。上のtoggleで自動更新されるから。
-                cell.likeButton.tintColor = .black
-                cell.viewModel?.post.likes = post.likes - 1 //この行はPostServiecのすぐ上に置いた方がresponsive
-                
+        guard let cellRowNumber = collectionView.indexPath(for: cell)?.row else { return }
+        let ownerUid = posts[cellRowNumber].ownerUid
+        
+        if posts[cellRowNumber].didLike {
+            posts[cellRowNumber].likes -= 1
+            posts[cellRowNumber].didLike = false
+            PostService.unlikePost(post: posts[cellRowNumber]) { _ in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
                 NotificationService.deleteNotification(toUid: ownerUid, type: .like,
-                                                       postId: cell.viewModel?.post.postId)
+                                                       postId: self.posts[cellRowNumber].postId)
             }
         } else {
-            PostService.likePost(post: post) { _ in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
-                cell.likeButton.setImage(#imageLiteral(resourceName: "like_selected"), for: .normal)  //ここからの２行は実は必要ない。上のtoggleで自動更新されるから。
-                cell.likeButton.tintColor = .red
-                cell.viewModel?.post.likes = post.likes + 1 //この行はPostServiecのすぐ上に置いた方がresponsive
-                
-                NotificationService.uploadNotification(toUid: post.ownerUid, fromUser: user,
-                                                       type: .like, post: post)
+            posts[cellRowNumber].likes += 1
+            posts[cellRowNumber].didLike = true
+            PostService.likePost(post: posts[cellRowNumber]) { _ in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
+                NotificationService.uploadNotification(toUid: ownerUid, fromUser: user,
+                                                       type: .like, post: self.posts[cellRowNumber])
             }
         }
     }
@@ -306,8 +301,8 @@ extension FeedController {
     func handleHashtagTapped(forCell cell: FeedCell) {
         
         cell.captionLabel.handleHashtagTap { hashtag in
-            let controller = HashtagPostsController(hashtag: hashtag.lowercased())
-            self.navigationController?.pushViewController(controller, animated: true)
+            let vc = HashtagPostsController(hashtag: hashtag.lowercased())
+            self.navigationController?.pushViewController(vc, animated: true)
         }
     }
     
@@ -319,8 +314,8 @@ extension FeedController {
                 self.showLoader(false)
                 
                 if let user = user {
-                    let controller = ProfileController(user: user)
-                    self.navigationController?.pushViewController(controller, animated: true)
+                    let vc = ProfileController(user: user)
+                    self.navigationController?.pushViewController(vc, animated: true)
                 } else {
                     self.showMessage(withTitle: "Error", message: "User does not exist")
                 }

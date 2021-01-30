@@ -14,7 +14,7 @@ struct Post {
     let ownerUsername: String  //User情報からのduplicated info
     let imageUrl: String
     var likes: Int  //runtime時にユーザーのアクション次第で値が変わるのでvar
-    var caption: String  //なぜか不明だがvar。letで良いかと。
+    let caption: String  //なぜか不明だがvar。letで良いかと。
     let timestamp: Timestamp
     let hashtags: [String]
     let postId: String  //これはfetchをしてPostのイニシャライズ時に必要な引数として同時に代入される

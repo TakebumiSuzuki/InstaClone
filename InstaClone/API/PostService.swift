@@ -104,36 +104,43 @@ struct PostService {
         }
     }
     
+    //FeelControllerから。----------------------------------------------------------------------------
     static func likePost(post: Post, completion: @escaping(FirestoreCompletion)) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         
-        COLLECTION_POSTS.document(post.postId).updateData(["likes": post.likes + 1])
+        COLLECTION_POSTS.document(post.postId).updateData(["likes": post.likes])
         
-        COLLECTION_POSTS.document(post.postId).collection("post-likes").document(uid).setData([:]) { _ in
-            COLLECTION_USERS.document(uid).collection("user-likes").document(post.postId).setData([:], completion: completion)
+        let timestamp = Timestamp(date: Date())
+        COLLECTION_POSTS.document(post.postId).collection("post-likes").document(uid).setData(["timestamp": timestamp]) { _ in
         }
     }
-    
+    //FeelControllerから。----------------------------------------------------------------------------
     static func unlikePost(post: Post, completion: @escaping(FirestoreCompletion)) {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
-        guard post.likes > 0 else { return }
         
-        COLLECTION_POSTS.document(post.postId).updateData(["likes": post.likes - 1])
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        guard post.likes >= 0 else { return }
+        
+        COLLECTION_POSTS.document(post.postId).updateData(["likes": post.likes])
         
         COLLECTION_POSTS.document(post.postId).collection("post-likes").document(uid).delete { _ in
-            COLLECTION_USERS.document(uid).collection("user-likes").document(post.postId).delete(completion: completion)
         }
     }
     
-    //-----------------------------------------------------------------------------------------
+    //FeelControllerから。----------------------------------------------------------------------------
     static func checkIfUserLikedPost(post: Post, completion: @escaping (Bool) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         
-        //user-likesの中に個別のからのpostIDを作るのは一見コストがかかるように見えるがexistsを使う限り無料なのでむしろ効率的かと
-        COLLECTION_USERS.document(uid).collection("user-likes").document(post.postId).getDocument { (snapshot, _) in
+        COLLECTION_POSTS.document(post.postId).collection("post-likes").document(uid).getDocument { (snapshot, error) in
             guard let didLike = snapshot?.exists else { return }
             completion(didLike)
         }
+        
+        
+        //user-likesの中に個別のからのpostIDを作るのは一見コストがかかるように見えるがexistsを使う限り無料なのでむしろ効率的かと
+//        COLLECTION_USERS.document(uid).collection("user-likes").document(post.postId).getDocument { (snapshot, _) in
+//            guard let didLike = snapshot?.exists else { return }
+//            completion(didLike)
+//        }
     }
     
     //userのfeedコレクションから自分用feed postsを取り出す。---------------------------------------------
@@ -145,7 +152,7 @@ struct PostService {
             if let error = error{ completion(.failure(error)) }
             let group = DispatchGroup()
             
-            snapshot?.documents.forEach({ document in
+            snapshot?.documents.forEach({ document in  //ここでsnapshot = nilの時には下のnotifyに行って空のpostsとして処理される。
                 group.enter()
                 fetchPost(withPostId: document.documentID) { (result) in
                     switch result{
@@ -153,9 +160,13 @@ struct PostService {
                         print("DEBUG: Error fetching a single Post \(error)")
                         group.leave()
                     case .success(let post):
-                        var postMutable = post
+                        var postMutable = post    //以下でlikeしたかどうか調べる。
                         COLLECTION_USERS.document(uid).collection("user-likes").document(post.postId).getDocument { (snapshot, _) in
-                            guard let didLike = snapshot?.exists else { return }
+                            guard let didLike = snapshot?.exists else {
+                                posts.append(postMutable)
+                                group.leave()
+                                return    //errorの時はここで打ち止めとなりデフォルト値のfalseのままになるのでエラーハンドリングする必要なし。
+                            }
                             postMutable.didLike = didLike
                             posts.append(postMutable)
                             group.leave()
@@ -170,28 +181,26 @@ struct PostService {
         }
     }
     
+    
     static func deletePost(_ postId: String, completion: @escaping(FirestoreCompletion)) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         
-        COLLECTION_POSTS.document(postId).collection("post-likes").getDocuments { snapshot, _ in
-            guard let uids = snapshot?.documents.map({ $0.documentID }) else { return }
-            uids.forEach({ COLLECTION_USERS.document($0).collection("user-likes").document(postId).delete() })
-        }  //上は各userの中のサブコレクションのuser-likesの中から該当するpostIDを消去している。そもそもuser-likesの記録はいらないのでは？
-        
-        
-        COLLECTION_POSTS.document(postId).delete { _ in   //ポストそのものを消去しているが、サブコレクションは消去されてない
-            COLLECTION_FOLLOWERS.document(uid).collection("user-followers").getDocuments { snapshot, _ in
-                guard let uids = snapshot?.documents.map({ $0.documentID }) else { return }
-                uids.forEach({ COLLECTION_USERS.document($0).collection("user-feed").document(postId).delete() })
-                  //フォロワーのそれぞれのuser-feedから該当のpostIDを消している。この作業はuser-feedコレクションクエリでもっと簡単にできるはず。
-                
-                
-                let notificationQuery = COLLECTION_NOTIFICATIONS.document(uid).collection("user-notifications")
-                notificationQuery.whereField("postId", isEqualTo: postId).getDocuments { snapshot, _ in
-                    guard let documents = snapshot?.documents else { return }
-                    documents.forEach({ $0.reference.delete(completion: completion) })
-                }  //ここは不明
-            }
+        COLLECTION_POSTS.document(postId).collection("post-likes").getDocuments { (snapshot, error) in
+            guard let documents = snapshot?.documents.map({ $0.documentID }) else{ return }
+            documents.forEach { COLLECTION_POSTS.document(postId).collection("post-likes").document($0).delete() }
         }
+        COLLECTION_POSTS.document(postId).delete()
+        
+        COLLECTION_FOLLOWERS.document(uid).collection("user-followers").getDocuments { snapshot, _ in
+            guard let uids = snapshot?.documents.map({ $0.documentID }) else { return }
+            uids.forEach({ COLLECTION_USERS.document($0).collection("user-feed").document(postId).delete() })
+              //フォロワーのそれぞれのuser-feedから該当のpostIDを消している。この作業はuser-feedコレクションクエリでもっと簡単にできるはず。
+        }
+        
+        let notificationQuery = COLLECTION_NOTIFICATIONS.document(uid).collection("user-notifications")
+        notificationQuery.whereField("postId", isEqualTo: postId).getDocuments { snapshot, _ in
+            guard let documents = snapshot?.documents else { return }
+            documents.forEach({ $0.reference.delete(completion: completion) })
+        }  //ここは不明
     }
 }
