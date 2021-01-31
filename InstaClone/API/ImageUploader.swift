@@ -8,17 +8,6 @@
 
 import FirebaseStorage
 
-public enum CustomError: Error{
-    
-    case dataHandling
-    
-    var localizedDescription: String{
-        switch self{
-        case .dataHandling:
-            return "Data handling error occured in this device"
-        }
-    }
-}
 
 public enum ImageKind{
     case profileImage

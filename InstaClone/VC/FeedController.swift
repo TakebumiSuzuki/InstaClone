@@ -17,9 +17,10 @@ class FeedController: UICollectionViewController {
     
     // MARK: - Lifecycle
     
-    private var posts = [Post](){   //通常のfeed画面にはこちらの変数を使う
-        didSet { collectionView.reloadData() }
-    }
+    private var posts = [Post]()
+//    {   //通常のfeed画面にはこちらの変数を使う
+//        didSet { collectionView.reloadData() }
+//    }
     
     var post: Post? {    //単体のポストを表示する場合にはこちらの変数を使う。上のpostsを使う場合にはここはnilのままになる。
         didSet { collectionView.reloadData() }
@@ -100,6 +101,7 @@ class FeedController: UICollectionViewController {
     // MARK: - API
     
     func fetchPosts() {
+        
         PostService.fetchFeedPosts { result in   //自分のuidからfeed postを取得すると同時にdidLikeも代入。
             switch result{
             case .failure(let error):
@@ -110,10 +112,13 @@ class FeedController: UICollectionViewController {
             case .success(let posts):
                 self.collectionView.refreshControl?.endRefreshing()
                 if posts.isEmpty{
+                    self.posts = []
                     self.showSimpleAlert(title: "Search and Follow your friends to see posts!!", message: "", actionTitle: "ok")
+                    self.collectionView.reloadData()
                     return
                 }
                 self.posts = posts
+                self.collectionView.reloadData()
             }
         }
     }
@@ -123,6 +128,7 @@ class FeedController: UICollectionViewController {
         
         PostService.checkIfUserLikedPost(post: post) { didLike in //errorの場合はデフォルトのfalseのままになる。
             self.post?.didLike = didLike
+            self.collectionView.reloadData()
         }
     }
     
@@ -131,14 +137,15 @@ class FeedController: UICollectionViewController {
         
         PostService.fetchPost(withPostId: post.postId) { (result) in
             switch result{
-            case .failure(_):
-                print("DEBUG Error fetching single post")  //この場合にはalertを表示させる必要ないかと。
+            case .failure(let error):
+                print("DEBUG Error fetching single post \(error.localizedDescription)")  //この場合にはalertを表示させる必要ないかと。
                 self.collectionView.refreshControl?.endRefreshing()
             case .success(let updatedPost):
                 self.post = updatedPost
                 PostService.checkIfUserLikedPost(post: post) { didLike in  //とりあえずここはエラーハンドリングなしで。
                     self.post?.didLike = didLike
                     self.collectionView.refreshControl?.endRefreshing()
+                    self.collectionView.reloadData()
                 }
             }
         }
@@ -147,11 +154,20 @@ class FeedController: UICollectionViewController {
     func deletePost(_ post: Post) {  //簡単に見えて超複雑。オプションボタンからのalertで選択可能。
         self.showLoader(true)
         
-        PostService.deletePost(post.postId) { _ in
-            self.showLoader(false)
-            self.handleRefresh()
+        PostService.deletePost(post.postId) { (result) in
+            switch result{
+            case .failure(let error):
+                print("DEBUG: Error During Deleting Post. \(error.localizedDescription)")
+                self.showLoader(false)
+            case .success(let message):
+                if message == "YES1"{
+                    self.handleRefresh()
+                    self.showLoader(false)
+                }
+            }
         }
     }
+    
 }
 
 
@@ -205,7 +221,7 @@ extension FeedController: FeedCellDelegate {
     //プロフィール表示。
     func cell(_ cell: FeedCell, wantsToShowProfileFor uid: String) {
         
-        UserService.fetchUser(withUid: uid) { user in  //特にエラーハンドリングの必要ないかと。
+        UserService.fetchUser(withUid: uid) { user in  //エラーの時は途中でreturnされ何も起きないだけなので特にハンドリングの必要はない。
             let vc = ProfileController(user: user)
             self.navigationController?.pushViewController(vc, animated: true)
         }
@@ -225,22 +241,43 @@ extension FeedController: FeedCellDelegate {
         }
         let unfollowAction = UIAlertAction(title: "Unfollow \(post.ownerUsername)?", style: .default) { _ in
             self.showLoader(true)
-            UserService.unfollow(uid: post.ownerUid) { _ in
-                self.showLoader(false)
+            UserService.unfollow(uid: post.ownerUid) { (result) in
+                switch result{
+                case .failure(let error):
+                    self.showLoader(false)
+                    print("DEBUG \(error)")
+                case .success(let message):
+                    self.showLoader(false)
+                    if message == "Succeed1"{
+                        self.showSimpleAlert(title: "You unfollowed \(post.ownerUsername)", message: "", actionTitle: "ok")
+                    }
+                }
             }
         }
+        
         let followAction = UIAlertAction(title: "Follow \(post.ownerUsername)?", style: .default) { _ in
             self.showLoader(true)
-            UserService.follow(uid: post.ownerUid) { _ in
-                self.showLoader(false)
+            UserService.follow(uid: post.ownerUid) { (result) in
+                switch result{
+                case .failure(let error):
+                    self.showLoader(false)
+                    print("DEBUG \(error)")
+                case .success(let message):
+                    self.showLoader(false)
+                    if message == "Succeed1"{
+                        self.showSimpleAlert(title: "You're now following \(post.ownerUsername)", message: "", actionTitle: "ok")
+                    }
+                }
             }
         }
-        let cancelAction =  UIAlertAction(title: "Cancel", style: .cancel, handler: nil)  //キャンセルはどの場合でも表示される
         
+        let cancelAction =  UIAlertAction(title: "Cancel", style: .cancel, handler: nil)  //キャンセルはどの場合でも表示される
+        alert.addAction(cancelAction)
         
         if post.ownerUid == Auth.auth().currentUser?.uid { //自分のポストにはeditとdeleteとcancel
 //            alert.addAction(editPostAction)
             alert.addAction(deletePostAction)
+            
         } else {   //自分のポストでない場合にはさらにfollowしているかしていないかでunfollow/followを変える。
             UserService.checkIfUserIsFollowed(uid: post.ownerUid) { isFollowed in
                 if isFollowed {
@@ -250,10 +287,9 @@ extension FeedController: FeedCellDelegate {
                 }
             }
         }
-        
-        alert.addAction(cancelAction)
         present(alert, animated: true, completion: nil)
     }
+    
     
     func cell(_ cell: FeedCell, didLike post: Post) {  //postの引数は使っていないのでなくしてもよし。
         
@@ -264,8 +300,10 @@ extension FeedController: FeedCellDelegate {
         let ownerUid = posts[cellRowNumber].ownerUid
         
         if posts[cellRowNumber].didLike {
-            posts[cellRowNumber].likes -= 1
+            posts[cellRowNumber].likes -= 1   //以下の2つは現在のグローバルな[Post]を直接アップデートし、dequeueしてできるcellでの表示を合わせる為。
             posts[cellRowNumber].didLike = false
+            cell.viewModel?.post.likes -= 1    //以下の2つは即席で今見えている画面のUIの辻褄を合わせる為。これだけだとdequeueCellでバグになるので上の2つが必要
+            cell.viewModel?.post.didLike = false
             PostService.unlikePost(post: posts[cellRowNumber]) { _ in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
                 NotificationService.deleteNotification(toUid: ownerUid, type: .like,
                                                        postId: self.posts[cellRowNumber].postId)
@@ -273,6 +311,8 @@ extension FeedController: FeedCellDelegate {
         } else {
             posts[cellRowNumber].likes += 1
             posts[cellRowNumber].didLike = true
+            cell.viewModel?.post.likes += 1
+            cell.viewModel?.post.didLike = true
             PostService.likePost(post: posts[cellRowNumber]) { _ in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
                 NotificationService.uploadNotification(toUid: ownerUid, fromUser: user,
                                                        type: .like, post: self.posts[cellRowNumber])

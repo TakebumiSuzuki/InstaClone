@@ -113,10 +113,10 @@ class UploadPostController: UIViewController {
                 self.showSimpleAlert(title: "Failed to upload post", message: "", actionTitle: "ok")
                 return
             }
+            self.delegate?.controllerDidFinishUploadingPost(self)
             //ここにnotificationCenterを記述してfeedControllerがreloadできるようにし、下のdelegateはhandlerの外に出すべきか。
-            
         }
-        self.delegate?.controllerDidFinishUploadingPost(self)
+        
     }
 }
 

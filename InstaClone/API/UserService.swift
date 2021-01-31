@@ -16,7 +16,7 @@ struct UserService {
     static func fetchUser(withUid uid: String, completion: @escaping (User) -> Void) {
         
         COLLECTION_USERS.document(uid).getDocument { snapshot, error in
-            guard let dictionary = snapshot?.data() else { return }  //errorの時はここでreturnになる。
+            guard let dictionary = snapshot?.data() else { return }  //errorの時もここでreturnとなる。
             let user = User(dictionary: dictionary)
             completion(user)
         }
@@ -73,21 +73,54 @@ struct UserService {
             }
         }
     }
-    //FeedControllerから----------------------------------------------------------------------
-    static func follow(uid: String, completion: @escaping(FirestoreCompletion)) {
-        guard let currentUid = Auth.auth().currentUser?.uid else { return }
+    //FeedControllerから。完全な分岐追跡とエラーハンドリングができている---------------------------------------------------------------------
+    static func follow(uid: String, completion: @escaping (Result<String, Error>) -> Void) {
+        guard let currentUid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return}
         let timestamp = Timestamp(date: Date())
         COLLECTION_FOLLOWING.document(currentUid).collection("user-following").document(uid).setData(["timestamp": timestamp]) { error in
-            COLLECTION_FOLLOWERS.document(uid).collection("user-followers").document(currentUid).setData(["timestamp": timestamp], completion: completion)
+            if let error = error{ completion(.failure(error)); return }
+            COLLECTION_FOLLOWERS.document(uid).collection("user-followers").document(currentUid)
+                .setData(["timestamp": timestamp]) { (error) in
+                    if let error = error{ completion(.failure(error)); return }
+                    completion(.success("Succeed1"))
+                }
         }
+        COLLECTION_POSTS.whereField("ownerUid", isEqualTo: uid)
+            .order(by: "timestamp", descending: true).limit(to: 3).getDocuments { (snapshot, error) in
+                if let error = error{ completion(.failure(error)); return }
+                guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
+                documents.forEach {
+                    let dictionary = ["ownerUid": uid, "postId": $0.documentID, "timestamp": Timestamp(date: Date())] as [String: Any]
+                    COLLECTION_USERS.document(currentUid).collection("user-feed")
+                        .document($0.documentID).setData(dictionary) { (error) in
+                            if let error = error{ completion(.failure(error)); return }
+                            completion(.success("Scceed2"))
+                        }
+                }
+            }
     }
     
-    //FeedControllerから----------------------------------------------------------------------
-    static func unfollow(uid: String, completion: @escaping(FirestoreCompletion)) {
-        guard let currentUid = Auth.auth().currentUser?.uid else { return }
+    //FeedControllerから。完全な分岐追跡とエラーハンドリングができている----------------------------------------------------------------------
+    static func unfollow(uid: String, completion: @escaping (Result<String, Error>) -> Void) {
+        guard let currentUid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return}
+        
         COLLECTION_FOLLOWING.document(currentUid).collection("user-following").document(uid).delete { error in
-                COLLECTION_FOLLOWERS.document(uid).collection("user-followers").document(currentUid).delete(completion: completion)
+            if let error = error{ completion(.failure(error)); return }
+            COLLECTION_FOLLOWERS.document(uid).collection("user-followers").document(currentUid).delete { (error) in
+                if let error = error{ completion(.failure(error)); return }
+                completion(.success("Succeed1"))
+            }
         }
+        COLLECTION_USERS.document(currentUid).collection("user-feed")
+            .whereField("ownerUid", isEqualTo: uid).getDocuments { (snapshot, error) in
+                if let error = error{ completion(.failure(error)); return }
+                guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
+                documents.forEach({ $0.reference.delete { (error) in
+                    if let error = error{ completion(.failure(error)); return }
+                    completion(.success("Scceed2"))
+                }})
+                
+            }
     }
     
 //  uid → currentUIDがfollowしてるかどうか。profileControllerとFeedControllerから。エラーハンドリングの必要ないのでは?----------------
