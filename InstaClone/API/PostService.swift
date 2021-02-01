@@ -93,17 +93,29 @@ struct PostService {
     }
     
     //最後にDEBUG
-    static func fetchPosts(forHashtag hashtag: String, completion: @escaping([Post]) -> Void) {
+    static func fetchPosts(forHashtag hashtag: String, completion: @escaping ([Post]) -> Void) {
         var posts = [Post]()
-        COLLECTION_HASHTAGS.document(hashtag).collection("posts").getDocuments { snapshot, error in
-            guard let documents = snapshot?.documents else { return }
-            
+        COLLECTION_POSTS.whereField("hashtags", arrayContains: hashtag).getDocuments { (snapshot, error) in
+            if let error = error {
+                print("DEBUG Error fetching hashtag posts \(error.localizedDescription)")
+            }
+            guard let documents = snapshot?.documents else{ return }
+            posts = []
+            documents.forEach { (document) in
+                posts.append(Post(dictionary: document.data()))
+            }
+            completion(posts)
+        }
+//
+//        COLLECTION_POSTS.document(hashtag).collection("posts").getDocuments { snapshot, error in
+//            guard let documents = snapshot?.documents else { return }
+//
             
 //            documents.forEach({ fetchPost(withPostId: $0.documentID) { post in
 //                posts.append(post)
 //                completion(posts)
 //            } })
-        }
+//        }
     }
     
     //FeelControllerから。----------------------------------------------------------------------------

@@ -5,6 +5,7 @@
 //  Created by TAKEBUMI SUZUKI on 1/27/21.
 //
 
+//profileViewControllerの下部にあるのと同じCellを使い、小さな正方形のポスト一覧を作る。
 
 import UIKit
 
@@ -87,9 +88,10 @@ extension HashtagPostsController: UICollectionViewDelegateFlowLayout {
 // MARK: - UICollectionViewDelegate
 
 extension HashtagPostsController {
+    
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let controller = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
-        controller.post = posts[indexPath.row]
-        navigationController?.pushViewController(controller, animated: true)
+        let vc = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
+        vc.post = posts[indexPath.row]
+        navigationController?.pushViewController(vc, animated: true)
     }
 }

@@ -18,7 +18,7 @@ enum UserFilterConfig: Equatable {
     case followers(String)  //profileページのfollwer押した時。Stringにはuidが入る
     case following(String)  //profileページのfollowing押した時。Stringにはuidが入る
     case likes(String)  //feedページのlike押した時。StringにはpostIDが入る
-    case messages  //ConversationsControllerから何も引数なしで遷移される
+    case messages  //ConversationsControllerのshowNewMessageから何も引数なしで遷移される
     case all  //tabからのアクセス初期画面。この時のみtableViewが隠れ、collectionViewが表示される。これ以外は全てtableViewのみ表示。
     
     var navigationItemTitle: String {  //navBar表示用

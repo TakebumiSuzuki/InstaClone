@@ -321,11 +321,14 @@ extension FeedController: FeedCellDelegate {
         }
     }
     
-    
-    func cell(_ cell: FeedCell, wantsToShowCommentsFor post: Post) {
+    func cell(_ cell: FeedCell, wantsToShowCommentsFor post: Post, image: UIImage, caption: String) {
         let vc = CommentController(post: post)
+        vc.image = image
+        vc.caption = caption
+        vc.postViewModel = cell.viewModel
         navigationController?.pushViewController(vc, animated: true)
     }
+    
 
     func cell(_ cell: FeedCell, wantsToViewLikesFor postId: String) {
         let vc = SearchController(config: .likes(postId))

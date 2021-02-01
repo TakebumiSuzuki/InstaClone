@@ -65,7 +65,6 @@ struct PostViewModel {
             label.customColor[customLabelType] = .black
             label.font = UIFont.systemFont(ofSize: 14)
             label.textColor = .black
-            label.numberOfLines = 2
         }
     }
     

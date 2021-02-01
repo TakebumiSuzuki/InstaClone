@@ -9,7 +9,7 @@ import UIKit
 import ActiveLabel
 
 protocol FeedCellDelegate: class {
-    func cell(_ cell: FeedCell, wantsToShowCommentsFor post: Post)
+    func cell(_ cell: FeedCell, wantsToShowCommentsFor post: Post, image: UIImage, caption: String)
     func cell(_ cell: FeedCell, didLike post: Post)
     func cell(_ cell: FeedCell, wantsToShowProfileFor uid: String)
     func cell(_ cell: FeedCell, wantsToViewLikesFor postId: String)
@@ -103,8 +103,8 @@ class FeedCell: UICollectionViewCell {
     
     lazy var captionLabel: ActiveLabel = {  //ActiveLableについては調べる必要あり
         let label = ActiveLabel()   //viewModel側の設定で、usernameとcaptionを続けて表示するようにしている。
-        label.font = UIFont.systemFont(ofSize: 80)
-//        let tap = UITapGestureRecognizer(target: self, action: #selector(captionLabelTapped))
+        label.numberOfLines = 2
+//        let tap = UITapGestureRecognizer(target: self, action: #selector(didTapComments))
 //        label.isUserInteractionEnabled = true
 //        label.addGestureRecognizer(tap)
         return label
@@ -147,7 +147,7 @@ class FeedCell: UICollectionViewCell {
         configureActionButtons()
         
         addSubview(likesLabel)
-        likesLabel.anchor(top: likeButton.bottomAnchor, left: leftAnchor, paddingTop: -2,
+        likesLabel.anchor(top: likeButton.bottomAnchor, left: leftAnchor, paddingTop: -8,
                           paddingLeft: 10)
         
         addSubview(captionLabel)
@@ -189,7 +189,7 @@ class FeedCell: UICollectionViewCell {
         captionLabel.enabledTypes = viewModel.enabledTypes
         viewModel.customizeLabel(captionLabel)  //このファンクションでコメントを埋め込むかと。
         
-        postTimeLabel.text = viewModel.timestampString
+        postTimeLabel.text = "\(viewModel.timestampString!) ago"
     }
     
     
@@ -212,7 +212,9 @@ class FeedCell: UICollectionViewCell {
     }
     @objc func didTapComments() {
         guard let viewModel = viewModel else { return }
-        delegate?.cell(self, wantsToShowCommentsFor: viewModel.post)
+        guard let image = postImageView.image else { return }
+        guard let caption = captionLabel.text else { return }
+        delegate?.cell(self, wantsToShowCommentsFor: viewModel.post, image: image, caption: caption)
     }
     
     @objc func didTapLike() {
