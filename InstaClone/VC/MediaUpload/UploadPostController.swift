@@ -36,6 +36,7 @@ class UploadPostController: UIViewController {
     private lazy var captionTextView: InputTextView = {
         let tv = InputTextView()
         tv.font = UIFont.systemFont(ofSize: 18)
+        tv.autocorrectionType = .no
         tv.placeholderText = "Enter caption.."
         tv.placeholderShouldCenter = false  //内部に作った"Enter caption.."のlabelが左上にピンされる
         tv.delegate = self   //一番下にある、文字入力するたびに呼ばれるUITextViewDelegateを使用する為

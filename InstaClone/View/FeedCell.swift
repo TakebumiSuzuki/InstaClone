@@ -14,6 +14,7 @@ protocol FeedCellDelegate: class {
     func cell(_ cell: FeedCell, wantsToShowProfileFor uid: String)
     func cell(_ cell: FeedCell, wantsToViewLikesFor postId: String)
     func cell(_ cell: FeedCell, wantsToShowOptionsForPost post: Post)
+    func cell(_ cell: FeedCell, wantsToShare image: UIImage, caption: String)
 }
 
 
@@ -24,6 +25,7 @@ class FeedCell: UICollectionViewCell {
     
     //ポイントはFeedController上で cell.viewModel?.post.ownerUsername = "test" などとやるとpostとシンクロして
     //viewModelが更新され、その結果、didSetが起動し、UIも連動して更新されるという事。自動アップデートができる。
+    //これは即席でcell上のUIを変化させるのに使える。根本的にはグローバルの[Post]をアップデートする必要がある(dequeueに対応する為)。
     var viewModel: PostViewModel? {  //viewModelはcellが作られる時に、postを使って作られ、同時に代入される
         didSet { configure() }
     }
@@ -34,15 +36,14 @@ class FeedCell: UICollectionViewCell {
         iv.contentMode = .scaleAspectFill
         iv.clipsToBounds = true
         iv.backgroundColor = .lightGray
-        iv.isUserInteractionEnabled = true   //タップした時にユーザー画面が表示されるように。
+        iv.isUserInteractionEnabled = true   //これがないと下のTapGestureが効かない。
         
         let tap = UITapGestureRecognizer(target: self, action: #selector(showUserProfile))
-        iv.isUserInteractionEnabled = true
         iv.addGestureRecognizer(tap)
         return iv
     }()
     
-    private lazy var usernameButton: UIButton = {  //private letでも大丈夫そう
+    private lazy var usernameButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitleColor(.black, for: .normal)
         button.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
@@ -62,8 +63,7 @@ class FeedCell: UICollectionViewCell {
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFill
         iv.clipsToBounds = true
-        iv.isUserInteractionEnabled = true   //gestureを使い忘れている気が。。
-        iv.image = #imageLiteral(resourceName: "venom-7")
+        iv.backgroundColor = .lightGray
         return iv
     }()
     
@@ -87,6 +87,7 @@ class FeedCell: UICollectionViewCell {
         let button = UIButton(type: .system)
         button.setImage(#imageLiteral(resourceName: "send2"), for: .normal)
         button.tintColor = .black
+        button.addTarget(self, action: #selector(didTapShare), for: .touchUpInside)
         return button
     }()
     
@@ -100,9 +101,12 @@ class FeedCell: UICollectionViewCell {
         return label
     }()
     
-    let captionLabel: ActiveLabel = {  //ActiveLableについては調べる必要あり
-        let label = ActiveLabel()
-        label.font = UIFont.systemFont(ofSize: 14)
+    lazy var captionLabel: ActiveLabel = {  //ActiveLableについては調べる必要あり
+        let label = ActiveLabel()   //viewModel側の設定で、usernameとcaptionを続けて表示するようにしている。
+        label.font = UIFont.systemFont(ofSize: 80)
+//        let tap = UITapGestureRecognizer(target: self, action: #selector(captionLabelTapped))
+//        label.isUserInteractionEnabled = true
+//        label.addGestureRecognizer(tap)
         return label
     }()
     
@@ -148,7 +152,7 @@ class FeedCell: UICollectionViewCell {
         
         addSubview(captionLabel)
         captionLabel.anchor(top: likesLabel.bottomAnchor, left: leftAnchor, right: rightAnchor,
-                            paddingLeft: 10, paddingRight: 8)
+                            paddingLeft: 10, paddingRight: 10)
         
         addSubview(postTimeLabel)
         postTimeLabel.anchor(top: captionLabel.bottomAnchor, left: leftAnchor, paddingLeft: 10)
@@ -161,14 +165,14 @@ class FeedCell: UICollectionViewCell {
     
     // MARK: - Helpers
     
-    func configureActionButtons() {  //leadingアンカーの設定が足りていない気がするが。。。
+    func configureActionButtons() {
         
         let stackView = UIStackView(arrangedSubviews: [likeButton, commentButton, shareButton])
         stackView.axis = .horizontal
         stackView.distribution = .fillEqually
         
         addSubview(stackView)
-        stackView.anchor(top: postImageView.bottomAnchor, width: 120, height: 50)
+        stackView.anchor(top: postImageView.bottomAnchor, left: leftAnchor, paddingLeft: 0, width: 120, height: 50)
     }
     
     func configure() {  //cellが生成されてその後ViewModelが代入されるとdidSetでここが呼ばれる。また、postオブジェクトが更新された時にも。
@@ -190,6 +194,12 @@ class FeedCell: UICollectionViewCell {
     
     
     // MARK: - Actions
+    
+    @objc func didTapShare() {
+        guard let image = postImageView.image else { return }
+        guard let caption = captionLabel.text else { return }
+        delegate?.cell(self, wantsToShare: image, caption: caption)
+    }
     
     @objc func showUserProfile() {
         guard let viewModel = viewModel else { return }

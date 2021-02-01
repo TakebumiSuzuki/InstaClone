@@ -10,8 +10,8 @@ import Firebase
 
 struct CommentService {
     
-    static func uploadComment(comment: String, post: Post, user: User,
-                              completion: @escaping(FirestoreCompletion)) {
+    //FirestoreCompletionを使っておけば、errorはそのまま勝手に伝えてくれる。
+    static func uploadComment(comment: String, post: Post, user: User, completion: @escaping (FirestoreCompletion)) {
 
         let data: [String: Any] = ["uid": user.uid,
                                    "comment": comment,
@@ -20,25 +20,26 @@ struct CommentService {
                                    "profileImageUrl": user.profileImageUrl,
                                    "postOwnerUid": post.ownerUid]
         
-        COLLECTION_POSTS.document(post.postId).collection("comments").addDocument(data: data,
-                                                                             completion: completion)
+        COLLECTION_POSTS.document(post.postId).collection("comments").addDocument(data: data, completion: completion)
     }
     
     
-    static func fetchComments(forPost postID: String, completion: @escaping([Comment]) -> Void) {
+    static func fetchComments(forPost postID: String, completion: @escaping ([Comment]) -> Void) {
         var comments = [Comment]()
         let query = COLLECTION_POSTS.document(postID).collection("comments")
             .order(by: "timestamp", descending: true)
         
         query.addSnapshotListener { (snapshot, error) in
-            snapshot?.documentChanges.forEach({ change in
-                if change.type == .added {
-                    let data = change.document.data()
-                    let comment = Comment(dictionary: data)
-                    comments.append(comment)
-                }
+            if let error = error{
+                print("DEBUG: Error during snapshotListening...\(error.localizedDescription)")
+                return
+            }
+            print("----------------snapshotLISTENING")
+            comments = []
+            snapshot?.documents.forEach({ document in
+                let comment = Comment(dictionary: document.data())
+                comments.append(comment)
             })
-            
             completion(comments)
         }
     }

@@ -41,7 +41,7 @@ struct PostViewModel {
     
     var caption: String { return post.caption }
     
-    var customLabelType: ActiveType {
+    var customLabelType: ActiveType {   //caption一番左に表示される投稿者自身のusernameを太字にする為にカスタムとして扱っている。
         return ActiveType.custom(pattern: "^\(username)\\b")
     }
     var enabledTypes: [ActiveType] {
@@ -54,13 +54,14 @@ struct PostViewModel {
             case .custom:
                 atts[NSAttributedString.Key.font] = UIFont.boldSystemFont(ofSize: 14)
             default: ()
+                atts[NSAttributedString.Key.font] = UIFont.systemFont(ofSize: 14)
             }
             return atts
         }
     }
     func customizeLabel(_ label: ActiveLabel) {
         label.customize { label in
-            label.text = "\(username) \(caption)"     //ここでusernameとcaptionが使われている。
+            label.text = "\(username)  \(caption)"     //ここでusernameとcaptionが使われている。
             label.customColor[customLabelType] = .black
             label.font = UIFont.systemFont(ofSize: 14)
             label.textColor = .black

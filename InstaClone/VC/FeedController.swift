@@ -8,6 +8,7 @@
 
 import UIKit
 import Firebase
+import SafariServices
 
 private let reuseIdentifier = "Cell"
 
@@ -326,11 +327,18 @@ extension FeedController: FeedCellDelegate {
         navigationController?.pushViewController(vc, animated: true)
     }
 
-    
     func cell(_ cell: FeedCell, wantsToViewLikesFor postId: String) {
         let vc = SearchController(config: .likes(postId))
         navigationController?.pushViewController(vc, animated: true)
     }
+    
+    
+    func cell(_ cell: FeedCell, wantsToShare image: UIImage, caption: String) {
+        let vc = UIActivityViewController(activityItems: [image, caption], applicationActivities: nil)
+        present(vc, animated: true, completion: nil)
+    }
+        
+    
 }
 
 
@@ -339,7 +347,6 @@ extension FeedController: FeedCellDelegate {
 extension FeedController {
     
     func handleHashtagTapped(forCell cell: FeedCell) {
-        
         cell.captionLabel.handleHashtagTap { hashtag in
             let vc = HashtagPostsController(hashtag: hashtag.lowercased())
             self.navigationController?.pushViewController(vc, animated: true)
@@ -347,7 +354,6 @@ extension FeedController {
     }
     
     func handleMentionTapped(forCell cell: FeedCell) {
-        
         cell.captionLabel.handleMentionTap { username in
             self.showLoader(true)
             UserService.fetchUser(withUsername: username) { user in
@@ -357,17 +363,23 @@ extension FeedController {
                     let vc = ProfileController(user: user)
                     self.navigationController?.pushViewController(vc, animated: true)
                 } else {
-                    self.showMessage(withTitle: "Error", message: "User does not exist")
+                    self.showSimpleAlert(title: "User does not exist", message: "", actionTitle: "ok")
                 }
             }
         }
     }
     
     func handleURLTapped(forCell cell: FeedCell) {
-        
         cell.captionLabel.handleURLTap { (url) in
-            print("URL Tapped")
+            var urlString = url.absoluteString
+            if !(["http", "https"].contains(urlString.lowercased())) {
+                urlString = "http://\(urlString)"
+            }
+            guard let appendedUrl = URL(string: urlString) else{return}
+            let vc = SFSafariViewController(url: appendedUrl)
+            self.present(vc, animated: true, completion: nil)
         }
     }
+
     
 }

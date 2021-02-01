@@ -8,6 +8,7 @@
 
 import UIKit
 
+
 private let reuseIdentifier = "CommentCell"
 
 class CommentController: UICollectionViewController {
@@ -39,6 +40,9 @@ class CommentController: UICollectionViewController {
         super.viewDidLoad()
         configureCollectionView()
         fetchComments()
+    }
+    deinit {
+        print("Comment View deinitting-----------------------------")
     }
     
     override var inputAccessoryView: UIView? {
@@ -72,10 +76,13 @@ class CommentController: UICollectionViewController {
         collectionView.keyboardDismissMode = .interactive
     }
     
+    
     // MARK: - API
     
     func fetchComments() {
-        CommentService.fetchComments(forPost: post.postId) { comments in
+        
+        CommentService.fetchComments(forPost: post.postId) { [weak self]comments in
+            guard let self = self else { return }
             self.comments = comments
             self.collectionView.reloadData()
         }
@@ -105,7 +112,8 @@ extension CommentController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         
         let viewModel = CommentViewModel(comment: comments[indexPath.row])
-        let height = viewModel.size(forWidth: view.frame.width).height + 32  //view.frame.widthの部分、imageの丸写真分を引かないといけないのでは?
+        let labelWidth = view.frame.width - 40 - 8 - 8
+        let height = viewModel.size(forWidth: labelWidth).height + 32  //view.frame.widthの部分、imageの丸写真分を引かないといけないのでは?
         return CGSize(width: view.frame.width, height: height)
     }
 }
@@ -134,11 +142,13 @@ extension CommentController: CustomInputAccesoryViewDelegate {
         
         guard let tab = tabBarController as? MainTabController else { return }
         guard let currentUser = tab.user else { return }
-        
         showLoader(true)
         
         CommentService.uploadComment(comment: text, post: post, user: currentUser) { error in
             self.showLoader(false)
+            if let error = error{
+                print("DEBUG: Error uploading comment. \(error)")
+            }
             inputView.clearInputText()
             
             NotificationService.uploadNotification(toUid: self.post.ownerUid,

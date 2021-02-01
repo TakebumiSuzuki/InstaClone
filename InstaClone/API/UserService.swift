@@ -22,11 +22,11 @@ struct UserService {
         }
     }
     
-    ///username: String → comp(user)    //同名の場合はどうなる？
-    static func fetchUser(withUsername username: String, completion: @escaping(User?) -> Void) {
+    //username: String → comp(user) FeedControllerから。---------------------------------------------------------------
+    static func fetchUser(withUsername username: String, completion: @escaping (User?) -> Void) {
         
         COLLECTION_USERS.whereField("username", isEqualTo: username).getDocuments { snapshot, error in
-            guard let document = snapshot?.documents.first else {
+            guard let document = snapshot?.documents.first else {  //errorの場合も、ここで一緒にreturnされる。
                 completion(nil)
                 return
             }
