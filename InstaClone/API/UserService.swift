@@ -48,8 +48,9 @@ struct UserService {
         }
     }
     
-    //指定されたconfigEnumに従い条件分岐して[User]を返す。
-    static func fetchUsers(forConfig config: UserFilterConfig, completion: @escaping([User]) -> Void) {
+    
+    //指定されたconfigEnumに従い条件分岐して[User]を返す----------------------------------------------------------------
+    static func fetchUsers(forConfig config: UserFilterConfig, completion: @escaping ([User]) -> Void) {
         
         switch config {
         case .followers(let uid):
@@ -64,7 +65,7 @@ struct UserService {
             let ref = COLLECTION_POSTS.document(postId).collection("post-likes")
             fetchUsers(fromCollection: ref, completion: completion)
             
-        case .all, .messages:
+        case .all, .messages:  //全ユーザー取得。
             COLLECTION_USERS.getDocuments { (snapshot, error) in
                 guard let snapshot = snapshot else { return }
                 
@@ -73,7 +74,7 @@ struct UserService {
             }
         }
     }
-    //FeedControllerから。完全な分岐追跡とエラーハンドリングができている---------------------------------------------------------------------
+    //FeedControllerから。完全な分岐追跡とエラーハンドリングができている-----------------------------------------------------------
     static func follow(uid: String, completion: @escaping (Result<String, Error>) -> Void) {
         guard let currentUid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return}
         let timestamp = Timestamp(date: Date())

@@ -68,7 +68,6 @@ extension String{
     
     
     func getHashtags() -> [String]{
-        
         if let regex = try? NSRegularExpression(pattern: "#[\\p{L}0-9_]*", options: .caseInsensitive){
             
             let string = self as NSString
@@ -78,6 +77,44 @@ extension String{
             }
         }
         return []
+    }
+    
+    func resolveEmails() -> String?{
+        let nsText: NSString = self as NSString
+        let words: [String] = nsText.components(separatedBy: " ")
+        var detectedWords:[String] = []
+        for word in words{
+            if word.isValidEmail(){  //上に書いた別のExtensionメソッド
+                detectedWords.append(word)
+            }
+        }
+        return detectedWords.first
+    }
+    
+    func resolveHashtags() -> String?{
+        let nsText: NSString = self as NSString
+        let words: [String] = nsText.components(separatedBy: " ")
+        var detectedWords:[String] = []
+        for word in words{
+            if word.hasPrefix("#"){
+                let rawString = String(word.dropFirst())
+                detectedWords.append(rawString)
+            }
+        }
+        return detectedWords.first
+    }
+    
+    func resolveMentions() -> String?{
+        let nsText: NSString = self as NSString
+        let words: [String] = nsText.components(separatedBy: " ")
+        var detectedWords:[String] = []
+        for word in words{
+            if word.hasPrefix("@"){
+                let rawString = String(word.dropFirst())
+                detectedWords.append(rawString)
+            }
+        }
+        return detectedWords.first
     }
     
 }

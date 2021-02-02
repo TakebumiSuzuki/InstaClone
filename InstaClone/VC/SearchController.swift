@@ -12,10 +12,10 @@ private let reuseIdentifier = "UserCell"  //tableViewのcell
 private let postCellIdentifier = "PostCell"  //collectionViewのcell
 
 
-//このUserFilterConfigはinitの際に同時に代入される。ポイントはfetchUserするときに、何をサーチするのかを決めるという事。
-enum UserFilterConfig: Equatable {
+//このUserFilterConfigはinitの際に同時に代入される。
+enum UserFilterConfig: Equatable {  //Equatableがあるとイコールが使える。条件分岐で使えるという事。
     
-    case followers(String)  //profileページのfollwer押した時。Stringにはuidが入る
+    case followers(String)  //profileページのfollower押した時。Stringにはuidが入る
     case following(String)  //profileページのfollowing押した時。Stringにはuidが入る
     case likes(String)  //feedページのlike押した時。StringにはpostIDが入る
     case messages  //ConversationsControllerのshowNewMessageから何も引数なしで遷移される
@@ -26,13 +26,13 @@ enum UserFilterConfig: Equatable {
         case .followers: return "Followers"
         case .following: return "Following"
         case .likes: return "Likes"
-        case .messages: return "New Message" //以上4つの場合はsearchBarは表示されない。
-        case .all: return "Search"  //最初の画面は全ポスト表示。.messageと.allの場合はuserは全登録者表示。
+        case .messages: return "New Messages" //以上4つの場合はsearchBarは表示されないし、する必要がない。
+        case .all: return "Search"  //最初の画面は全ポスト表示。.messagesと.allの場合はuserは全登録者表示。
         }
     }
 }
 
-//.messageモードでcellをタップした場合にチャットスタートするために使われる。
+//.messageモードでcellをタップした場合にチャットスタートするためだけに使われる。
 protocol SearchControllerDelegate: class {
     func controller(_ controller: SearchController, wantsToStartChatWith user: User)
 }
@@ -47,11 +47,11 @@ class SearchController: UIViewController {
     
     private var users = [User]()
     private var filteredUsers = [User]()
-    private var posts = [Post]()  //tabをタップしての直接表示の初期画面で使われる
+    private var posts = [Post]()  //tabをタップしての直接表示の初期画面のみで使われる
+    private var filteredPosts = [Post]()
     
     private let searchController = UISearchController(searchResultsController: nil)
     private let tableView = UITableView()
-    
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .vertical
@@ -67,8 +67,8 @@ class SearchController: UIViewController {
     //searchControllerがアクティブでsearchBarが空でない場合のみtrue。これにより、tableViewでusersを使うかfilteredUsersを使うか。
     //結論的には、searchBar内をタップするとtableViewでuserを表示(さらにその中でusersを使うかfilteredUsersを使うか分岐)。
     //cancelをタップするとactiveではなくなり、tableViewがhiddenされてポスト表示になる。
-    private var inSearchMode: Bool {  //tableViewのdataSource内でこの論理結果を使ってスイッチしている。
-        return searchController.isActive && !searchController.searchBar.text!.isEmpty
+    private var inSearchMode: Bool {  //tableViewのdataSource内でこの論理結果を使ってusers/filteredUsersのスイッチをしている。
+        return searchController.isActive && !searchController.searchBar.text!.trimmingCharacters(in: .whitespaces).isEmpty
     }
     
     
@@ -88,25 +88,30 @@ class SearchController: UIViewController {
         configureSearchController()
         configureUI()
         fetchUsers()
-        fetchPosts()
+        if config == .all{
+            fetchPosts()
+        }
     }
    
    
     // MARK: - Helpers
     
     func configureSearchController() {
-        searchController.searchResultsUpdater = self  //デリゲートの設定のようなもの。UISearchResultsUpdatingプロトコル。検索ロジック。
-        searchController.searchBar.delegate = self   //ボタンの表示非表示などに対応する。UISearchBarDelegateプロトコル。
-        searchController.searchBar.placeholder = "Search"
-        searchController.obscuresBackgroundDuringPresentation = false  //検索中に画面が暗くなって選択できないようになるので、ここはfalseで。
-        searchController.hidesNavigationBarDuringPresentation = false
-        navigationItem.searchController = searchController  //navItemに備わっているプロパティ。
-        navigationItem.hidesSearchBarWhenScrolling = false //下にスクロールするとsearchBarが上に消えるかどうか。自分で書いたコード。
-        definesPresentationContext = true   //不明
+        if config == .all{
+            searchController.searchResultsUpdater = self  //デリゲートの設定のようなもの。UISearchResultsUpdatingプロトコル。検索ロジック。
+            searchController.searchBar.delegate = self   //ボタンの表示非表示などに対応する。UISearchBarDelegateプロトコル。
+            searchController.searchBar.placeholder = "Search with hashtag, name, or email"
+            searchController.searchBar.autocapitalizationType = .none
+            searchController.searchBar.autocorrectionType = .no
+            searchController.obscuresBackgroundDuringPresentation = false  //検索中に画面が暗くなって選択できないようになるので、ここはfalseで。
+            searchController.hidesNavigationBarDuringPresentation = false
+            navigationItem.searchController = searchController  //navigationItemに備わっているプロパティ。
+            navigationItem.hidesSearchBarWhenScrolling = false //下にスクロールするとsearchBarが上に消えるかどうか。
+            definesPresentationContext = true   //不明
+        }
     }
     
     func configureUI() {
-        
         view.backgroundColor = .white
         navigationItem.title = config.navigationItemTitle
         
@@ -114,10 +119,11 @@ class SearchController: UIViewController {
         tableView.rowHeight = 64
         tableView.dataSource = self
         tableView.delegate = self
+        tableView.tableFooterView = UIView()
         
         view.addSubview(tableView)  //ページを開いた初期画面では、.all以外の時にはtableViewが、.allの時にはcollectionViewが表示される。
         tableView.fillSuperview()  //superViewの上下左右に貼り付けるextensionメソッド
-        tableView.isHidden = config == .all
+        tableView.isHidden = config == .all  //Equatableプロトコルのおかげで等式が使える。
         
         guard config == .all else { return }
         view.addSubview(collectionView)
@@ -126,14 +132,15 @@ class SearchController: UIViewController {
     
     // MARK: - API
     
-    func fetchUsers() {   //configによって内容は変わるが、全てのcaseでusers: [User]が返される。
-        UserService.fetchUsers(forConfig: config) { users in
+    func fetchUsers() {   //configによって内容は変わるが、全てのcaseでそれぞれ違う種類の[User]が返される。
+        
+        UserService.fetchUsers(forConfig: config) { users in  //エラー時はreturnされるので特にハンドリングする必要ないのでは。。
             self.users = users
             self.tableView.reloadData()
         }
     }
     
-    func fetchPosts() {   //前ユーザーからの全投稿を時系列で取り出し表示する
+    func fetchPosts() {   //.allの時のみこれが起動。全ユーザーからの全投稿を時系列で取り出し表示する
         PostService.fetchPosts { posts in
             self.posts = posts
             self.collectionView.reloadData()
@@ -145,41 +152,102 @@ class SearchController: UIViewController {
 
 extension SearchController: UISearchResultsUpdating {
     
+    //search機能は.allの時のみ。それ以外のモードではこのメソッドは使わない。
     //searchBarがfirstResponderになった時と、毎回文字が入力された時に呼ばれる。つまりインクリメンタルサーチができる。
     func updateSearchResults(for searchController: UISearchController) {
         
-        guard let searchText = searchController.searchBar.text?.lowercased() else { return }
+        if !inSearchMode{
+            if !searchController.isActive{  //firstResponderになっていない時。つまり.allの初期画面かcancelボタンを押した直後。→Post表示。
+                tableView.isHidden = true
+                collectionView.isHidden = false
+                collectionView.reloadData()  //viewDidLoadで予めDLした全ポスト検索のデータをリロードするだけ。
+                print("POST 表示")
+            }else{                          //firstResponderになっている時で、かつ文字がスペースのみ(空文字)の時。→全ユーザー表示
+                tableView.isHidden = false
+                collectionView.isHidden = true
+                tableView.reloadData()      //viewDidLoadで予めDLした全ユーザー検索のデータをリロードするだけ。
+                print("空文字の時")
+            }
+        }
+        
+        if inSearchMode{    //以下は実際に文字が打ち込まれてサーチ状態になっている時。
+            print("その他実際のサーチモードの時")
+            guard let rawText = searchController.searchBar.text else { return }
+            let text = rawText.trimmingCharacters(in: .whitespaces)
+            
+            if text.count < 2{    //ここはつまりは一文字のみが打ち込まれている場合。フルネームとユーザーネーム両方から検索
+                collectionView.isHidden = true
+                tableView.isHidden = false
+                searchWithName(text: text.lowercased())
+                return
+            }
+            
+            if let detectedEmail = text.resolveEmails(){  //emailから検索。
+                collectionView.isHidden = true
+                tableView.isHidden = false
+                searchWithEmail(text: detectedEmail)
+                
+            }else if let detectedHashtag = text.resolveHashtags(){  //ここのみAPIを使う。
+                collectionView.isHidden = false
+                tableView.isHidden = true
+                PostService.fetchPosts(forHashtag: detectedHashtag) { (posts) in
+                    self.filteredPosts = posts
+                    self.collectionView.reloadData()
+                }
+                
+            }else if let detectedMention = text.resolveMentions(){  //ユーザーネームからのみ検索
+                collectionView.isHidden = true
+                tableView.isHidden = false
+                searchWithMention(text: detectedMention)
+                
+            }else{  //フルネームとユーザーネーム両方から検索
+                collectionView.isHidden = true
+                tableView.isHidden = false
+                searchWithName(text: text.lowercased())
+            }
+        }
+    }
+    
+    func searchWithName(text: String){    //フルネームとユーザーネーム両方から検索
         
         filteredUsers = users.filter({
-            $0.username.contains(searchText) || $0.fullname.lowercased().contains(searchText)
+            $0.username.contains(text) || $0.fullname.lowercased().contains(text)
         })
         
+    }
+    
+    func searchWithMention(text: String){   //ユーザーネームからのみ検索
+        filteredUsers = users.filter({
+            $0.username.contains(text)
+        })
         self.tableView.reloadData()
     }
+    
+    func searchWithEmail(text: String){    //emailから検索。
+        filteredUsers = users.filter({
+            $0.email.contains(text)
+        })
+        self.tableView.reloadData()
+    }
+    
 }
 
 // MARK: - UISearchBarDelegate
 
 extension SearchController: UISearchBarDelegate {
     
+    
     func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
-        
         searchBar.showsCancelButton = true
-        guard config == .all else { return }  //この一行はなくても良いかと。全てのケースで同じ結果になるので。
-        collectionView.isHidden = true
-        tableView.isHidden = false
     }
     
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {  //cancelボタンが押されたら.allモードに。
-        searchBar.endEditing(true)
         searchBar.showsCancelButton = false
+        searchBar.endEditing(true)
         searchBar.text = nil
         
         tableView.reloadData()
         
-        guard config == .all else { return }
-        collectionView.isHidden = false
-        tableView.isHidden = true
     }
 }
 
@@ -226,12 +294,13 @@ extension SearchController: UITableViewDelegate {
 extension SearchController: UICollectionViewDataSource {
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return posts.count
+        return inSearchMode ? filteredPosts.count : posts.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: postCellIdentifier, for: indexPath) as! ProfileCell
-        cell.viewModel = PostViewModel(post: posts[indexPath.row])
+        let post = inSearchMode ? filteredPosts[indexPath.row] : posts[indexPath.row]
+        cell.viewModel = PostViewModel(post: post)
         return cell
     }
 }
@@ -257,12 +326,13 @@ extension SearchController: UICollectionViewDelegateFlowLayout {
 
 // MARK: - UICollectionViewDelegate
 
-extension SearchController: UICollectionViewDelegate {
+extension SearchController: UICollectionViewDelegate { //.allの時にPostタップで単体Feedページを表示する為。
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let controller = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
-        controller.post = posts[indexPath.row]
-        navigationController?.pushViewController(controller, animated: true)
+        
+        let vc = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
+        vc.post = posts[indexPath.row]
+        navigationController?.pushViewController(vc, animated: true)
     }
 }
 

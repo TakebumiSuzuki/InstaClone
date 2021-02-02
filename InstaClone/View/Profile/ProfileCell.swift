@@ -7,6 +7,7 @@
 
 import UIKit
 
+//profileControllerの下部、またはsearchControllerの.allモードの時の、小さな正方形cellで使われる。
 class ProfileCell: UICollectionViewCell {
     
     // MARK: - Properties

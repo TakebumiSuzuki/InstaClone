@@ -51,8 +51,8 @@ struct PostService {
         }
     }
     
-    
-    static func fetchPosts(completion: @escaping([Post]) -> Void) {
+    //searchControllerより。全ポスト取得。-------------------------------------------------------------------------------
+    static func fetchPosts(completion: @escaping ([Post]) -> Void) {
         COLLECTION_POSTS.order(by: "timestamp", descending: true).getDocuments { (snapshot, error) in
             guard let documents = snapshot?.documents else { return }
             
@@ -92,7 +92,7 @@ struct PostService {
         }
     }
     
-    //最後にDEBUG
+    //SearchControllerから。----------------------------------------------------------------
     static func fetchPosts(forHashtag hashtag: String, completion: @escaping ([Post]) -> Void) {
         var posts = [Post]()
         COLLECTION_POSTS.whereField("hashtags", arrayContains: hashtag).getDocuments { (snapshot, error) in
@@ -106,16 +106,6 @@ struct PostService {
             }
             completion(posts)
         }
-//
-//        COLLECTION_POSTS.document(hashtag).collection("posts").getDocuments { snapshot, error in
-//            guard let documents = snapshot?.documents else { return }
-//
-            
-//            documents.forEach({ fetchPost(withPostId: $0.documentID) { post in
-//                posts.append(post)
-//                completion(posts)
-//            } })
-//        }
     }
     
     //FeelControllerから。----------------------------------------------------------------------------
