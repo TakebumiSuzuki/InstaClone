@@ -98,8 +98,13 @@ class ProfileController: UICollectionViewController {
     // MARK: - API
     //これらのメソッドはuserとpostsをmutateする。
     func checkIfUserIsFollowed() {  //中央のボタンの表示(3種類ある)がどれになるかを決定するために必要
-        UserService.checkIfUserIsFollowed(uid: user.uid) { isFollowed in
-            self.user.isFollowed = isFollowed
+        UserService.checkIfUserIsFollowed(uid: user.uid) { (result) in
+            switch result{
+            case .failure(let error):
+                print("DEBUG: Error cheking if user is followed. \(error)")
+            case .success(let isFollowed):
+                self.user.isFollowed = isFollowed
+            }
         }
     }
     

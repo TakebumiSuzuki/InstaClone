@@ -9,6 +9,7 @@ import Firebase
 
 struct NotificationService {
     
+    //-----------------------------------------------------------------------------------------------------------------
     static func uploadNotification(toUid uid: String, fromUser: User,
                                    type: NotificationType, post: Post? = nil) {
         guard let currentUid = Auth.auth().currentUser?.uid else { return }
@@ -32,7 +33,10 @@ struct NotificationService {
         docRef.setData(data)
     }
     
-    //profileControllerから。
+    
+    //profileController(unfollowした時)、NotificationControllerから。--------------------------------------------------------
+    //かなりトリッキーで、相手のnotificationの中で自分から送られたものを全て取り出しnotificationオブジェクトに変換する。
+    //それをforEachでしらみ潰しにフィルターをかけながら目的のnotificationオブジェクトを特定し、そのreferenceを使ってdelete()
     static func deleteNotification(toUid uid: String, type: NotificationType, postId: String? = nil) {
         guard let currentUid = Auth.auth().currentUser?.uid else { return }
         
@@ -51,17 +55,19 @@ struct NotificationService {
             }
     }
     
-    //-------------------------------------------------------------------------------------------------------
-    static func fetchNotifications(completion: @escaping ([Notification]) -> Void) {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+    
+    //-----------------------------------------------------------------------------------------------------------------------
+    static func fetchNotifications(completion: @escaping (Result<[Notification], Error>) -> Void) {
+        guard let uid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return }
         
         let query =  COLLECTION_NOTIFICATIONS.document(uid).collection("user-notifications")
             .order(by: "timestamp", descending: true)
        
-            query.getDocuments { snapshot, _ in
-            guard let documents = snapshot?.documents else { return }
+        query.getDocuments { snapshot, error in
+            if let error = error { completion(.failure(error)) }
+            guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
             let notifications = documents.map({ Notification(dictionary: $0.data()) })
-            completion(notifications)
+            completion(.success(notifications))
         }
     }
 }

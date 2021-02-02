@@ -28,13 +28,24 @@ struct ProfileHeaderViewModel {
     }
     
     var followButtonBackgroundColor: UIColor {
-        return user.isCurrentUser ? .white : .systemBlue
+        if user.isCurrentUser{
+            return .white
+        }else if user.isFollowed{
+            return .white
+        }else{
+            return .systemBlue
+        }
     }
     
     var followButtonTextColor: UIColor {
-        return user.isCurrentUser ? .black : .white
+        if user.isCurrentUser{
+            return .black
+        }else if user.isFollowed{
+            return .black
+        }else{
+            return .white
+        }
     }
-    
     
     var numberOfFollowers: NSAttributedString {
         return attributedStatText(value: user.stats.followers, label: "followers")

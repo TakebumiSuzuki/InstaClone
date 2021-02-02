@@ -12,7 +12,7 @@ typealias FirestoreCompletion = (Error?) -> Void
 
 struct UserService {
     
-    ///uid → comp(user)  profileController、feedControllerから。エラーハンドリングは良いかと。-----------------------------------------------------------------------------------
+    //profileController、feedController、notificationControllerから。エラーハンドリングは特に必要ないかと。-------------------------
     static func fetchUser(withUid uid: String, completion: @escaping (User) -> Void) {
         
         COLLECTION_USERS.document(uid).getDocument { snapshot, error in
@@ -78,47 +78,52 @@ struct UserService {
             }
         }
     }
-    //FeedControllerから。完全な分岐追跡とエラーハンドリングができている-----------------------------------------------------------
+    //FeedController、NotificationControllerから。完全な分岐追跡とエラーハンドリングができている---------------------------------------------
     static func follow(uid: String, completion: @escaping (Result<String, Error>) -> Void) {
-        print("follow")
         guard let currentUid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return}
+        
+        //それぞれのuserコレクションの中にあるfollowing/followersコレクションにお互いのuidを書き合う。
         let timestamp = Timestamp(date: Date())
         COLLECTION_FOLLOWING.document(currentUid).collection("user-following").document(uid).setData(["timestamp": timestamp]) { error in
             if let error = error{ completion(.failure(error)); return }
             COLLECTION_FOLLOWERS.document(uid).collection("user-followers").document(currentUid)
                 .setData(["timestamp": timestamp]) { (error) in
                     if let error = error{ completion(.failure(error)); return }
-                    completion(.success("Succeed1"))
+                    completion(.success("Succeed"))
                 }
         }
+        
+        //フォローした人の最近3つの投稿のpostIDをとってきて、それを自分のuser-feedの中に現在の時刻で記録する。
         COLLECTION_POSTS.whereField("ownerUid", isEqualTo: uid)
             .order(by: "timestamp", descending: true).limit(to: 3).getDocuments { (snapshot, error) in
                 if let error = error{ completion(.failure(error)); return }
                 guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
                 documents.forEach {
-                    let dictionary = ["ownerUid": uid, "postId": $0.documentID, "timestamp": Timestamp(date: Date())] as [String: Any]
+                    let dictionary = ["ownerUid": uid, "postId": $0.documentID, "timestamp": timestamp] as [String: Any]
                     COLLECTION_USERS.document(currentUid).collection("user-feed")
                         .document($0.documentID).setData(dictionary) { (error) in
                             if let error = error{ completion(.failure(error)); return }
-                            //ここでcompletion(.success())は必要ない。なぜなら既に一度上の方で呼んでいるから。
+                            //ここでcompletion(.success())は必要ない。なぜなら既に一度１０行上のブロックで呼んでいるから。
                             // ここにもう一度completionを書くと、複数回escapintCompHandlerが起動することになってしまう。
                         }
                 }
             }
     }
     
-    //FeedControllerから。完全な分岐追跡とエラーハンドリングができている----------------------------------------------------------------------
+    //FeedController、NotificationControllerから。完全な分岐追跡とエラーハンドリングができている-------------------------------------------
     static func unfollow(uid: String, completion: @escaping (Result<String, Error>) -> Void) {
         guard let currentUid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return}
-        print("unfollow")
+        
+        //それぞれのuserコレクションの中にあるfollowing/followersコレクションの中のお互いのuidを削除する。
         COLLECTION_FOLLOWING.document(currentUid).collection("user-following").document(uid).delete { error in
             if let error = error{ completion(.failure(error)); return }
             COLLECTION_FOLLOWERS.document(uid).collection("user-followers").document(currentUid).delete { (error) in
                 if let error = error{ completion(.failure(error)); return }
-                completion(.success("Succeed1"))
-                print("succeed1")
+                completion(.success("Succeed"))
             }
         }
+        
+        //自分のuser-feedの中からフォローしていた人の投稿を全て消す。
         COLLECTION_USERS.document(currentUid).collection("user-feed")
             .whereField("ownerUid", isEqualTo: uid).getDocuments { (snapshot, error) in
                 if let error = error{ completion(.failure(error)); return }
@@ -126,19 +131,21 @@ struct UserService {
                 documents.forEach({ $0.reference.delete { (error) in
                     if let error = error{ completion(.failure(error)); return }
                     //ここでcompletion(.success())は必要ない。なぜなら既に一度上の方で呼んでいるから。
-                    // ここにもう一度completionを書くと、複数回escapintCompHandlerが起動することになってしまう。
+                    // ここにもう一度completionを書くと、複数回escapingCompHandlerが起動することになってしまう。
                 }})
                 
             }
     }
     
+    
 //  uid → currentUIDがfollowしてるかどうか。profileControllerとFeedControllerから。エラーハンドリングの必要ないのでは?----------------
-    static func checkIfUserIsFollowed(uid: String, completion: @escaping (Bool) -> Void) {
-        guard let currentUid = Auth.auth().currentUser?.uid else { return }
+    static func checkIfUserIsFollowed(uid: String, completion: @escaping (Result<Bool, Error>) -> Void) {
+        guard let currentUid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil));return }
         
         COLLECTION_FOLLOWING.document(currentUid).collection("user-following").document(uid).getDocument { (snapshot, error) in
-            guard let isFollowed = snapshot?.exists else { return }
-            completion(isFollowed)
+            if let error = error{ completion(.failure(error)); return}
+            guard let isFollowed = snapshot?.exists else { completion(.failure(CustomError.snapShotIsNill)); return }
+            completion(.success(isFollowed))
         }
     }
     //--------------------------------------------------------------------------------------

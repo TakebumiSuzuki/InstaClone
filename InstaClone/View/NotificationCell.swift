@@ -41,7 +41,7 @@ class NotificationCell: UITableViewCell {
         return label
     }()
     
-    private lazy var postImageView: UIImageView = {
+    private lazy var postImageView: UIImageView = {  //これと下のfollowButtonはどちらか一つのみが表示される。
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFill
         iv.clipsToBounds = true
@@ -55,7 +55,6 @@ class NotificationCell: UITableViewCell {
     
     private lazy var followButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Loading", for: .normal)
         button.layer.cornerRadius = 6
         button.layer.borderColor = UIColor.lightGray.cgColor
         button.layer.borderWidth = 0.5

@@ -27,6 +27,8 @@ class FeedController: UICollectionViewController {
         didSet { collectionView.reloadData() }
     }
     
+    let refresher = UIRefreshControl()  //refresherControlについて他の導入例を見て調べる事。UIControllのサブクラス。
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -54,7 +56,6 @@ class FeedController: UICollectionViewController {
                                                                 action: #selector(showMessages))
         }
         
-        let refresher = UIRefreshControl()  //refresherControlについて他の導入例を見て調べる事。UIControllのサブクラス。
         refresher.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
         collectionView.refreshControl = refresher   //UIScrollViewで定義されているプロパティ
     }
@@ -134,18 +135,19 @@ class FeedController: UICollectionViewController {
     }
     
     func updatePost(){    //refresherから呼ばれる。
-        guard let post = post else {return}
+        guard let post = post else { refresher.endRefreshing(); return }
         
         PostService.fetchPost(withPostId: post.postId) { (result) in
             switch result{
             case .failure(let error):
                 print("DEBUG Error fetching single post \(error.localizedDescription)")  //この場合にはalertを表示させる必要ないかと。
-                self.collectionView.refreshControl?.endRefreshing()
+                self.refresher.endRefreshing()
+                
             case .success(let updatedPost):
                 self.post = updatedPost
                 PostService.checkIfUserLikedPost(post: post) { didLike in  //とりあえずここはエラーハンドリングなしで。
                     self.post?.didLike = didLike
-                    self.collectionView.refreshControl?.endRefreshing()
+                    self.refresher.endRefreshing()
                     self.collectionView.reloadData()
                 }
             }
@@ -246,11 +248,11 @@ extension FeedController: FeedCellDelegate {
                 switch result{
                 case .failure(let error):
                     self.showLoader(false)
-                    print("DEBUG \(error)")
+                    print("DEBUG: Error unfollowing user. \(error.localizedDescription)")
                 case .success(let message):
                     self.showLoader(false)
-                    if message == "Succeed1"{
-                        self.showSimpleAlert(title: "You unfollowed \(post.ownerUsername)", message: "", actionTitle: "ok")
+                    if message == "Succeed"{
+                        self.showSimpleAlert(title: "You unfollowed \(post.ownerUsername).", message: "", actionTitle: "ok")
                     }
                 }
             }
@@ -262,11 +264,11 @@ extension FeedController: FeedCellDelegate {
                 switch result{
                 case .failure(let error):
                     self.showLoader(false)
-                    print("DEBUG \(error)")
+                    print("DEBUG: Error following user. \(error.localizedDescription)")
                 case .success(let message):
                     self.showLoader(false)
-                    if message == "Succeed1"{
-                        self.showSimpleAlert(title: "You're now following \(post.ownerUsername)", message: "", actionTitle: "ok")
+                    if message == "Succeed"{
+                        self.showSimpleAlert(title: "You're now following \(post.ownerUsername).", message: "", actionTitle: "ok")
                     }
                 }
             }
@@ -278,50 +280,89 @@ extension FeedController: FeedCellDelegate {
         if post.ownerUid == Auth.auth().currentUser?.uid { //自分のポストにはeditとdeleteとcancel
 //            alert.addAction(editPostAction)
             alert.addAction(deletePostAction)
+            present(alert, animated: true, completion: nil)
             
         } else {   //自分のポストでない場合にはさらにfollowしているかしていないかでunfollow/followを変える。
-            UserService.checkIfUserIsFollowed(uid: post.ownerUid) { isFollowed in
-                if isFollowed {
-                    alert.addAction(unfollowAction)
-                } else {
-                    alert.addAction(followAction)
+            UserService.checkIfUserIsFollowed(uid: post.ownerUid) { (result) in
+                switch result{
+                case .failure(let error):
+                    print("DEBUG: Error checking if user is followed. \(error.localizedDescription)")
+                case .success(let isFollowed):
+                    if isFollowed {
+                        alert.addAction(unfollowAction)
+                    } else {
+                        alert.addAction(followAction)
+                    }
+                    self.present(alert, animated: true, completion: nil)
                 }
             }
         }
-        present(alert, animated: true, completion: nil)
     }
     
     
     func cell(_ cell: FeedCell, didLike post: Post) {  //postの引数は使っていないのでなくしてもよし。
-        
         guard let tab = tabBarController as? MainTabController else { return }
         guard let user = tab.user else { return }
         
-        
-        
-        guard let cellRowNumber = collectionView.indexPath(for: cell)?.row else { return }
-        let ownerUid = posts[cellRowNumber].ownerUid
-        
-        if posts[cellRowNumber].didLike {
-            posts[cellRowNumber].likes -= 1   //以下の2つは現在のグローバルな[Post]を直接アップデートし、dequeueしてできるcellでの表示を合わせる為。
-            posts[cellRowNumber].didLike = false
-            cell.viewModel?.post.likes -= 1    //以下の2つは即席で今見えている画面のUIの辻褄を合わせる為。これだけだとdequeueCellでバグになるので上の2つが必要
-            cell.viewModel?.post.didLike = false
-            PostService.unlikePost(post: posts[cellRowNumber]) { _ in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
-                NotificationService.deleteNotification(toUid: ownerUid, type: .like,
-                                                       postId: self.posts[cellRowNumber].postId)
+        if self.post == nil{
+            guard let cellRowNumber = collectionView.indexPath(for: cell)?.row else { return }
+            let ownerUid = posts[cellRowNumber].ownerUid
+            
+            if posts[cellRowNumber].didLike {
+                posts[cellRowNumber].likes -= 1   //以下の2つは現在のグローバルな[Post]を直接アップデートし、dequeueしてできるcellでの表示を合わせる為。
+                posts[cellRowNumber].didLike = false
+                cell.viewModel?.post.likes -= 1    //以下の2つは即席で今見えている画面のUIの辻褄を合わせる為。これだけだとdequeueCellでバグになるので上の2つが必要
+                cell.viewModel?.post.didLike = false
+                
+                PostService.unlikePost(post: posts[cellRowNumber]) { error in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
+                    
+                    if let error = error{
+                        print(error.localizedDescription)
+                    }
+                    NotificationService.deleteNotification(toUid: ownerUid, type: .like,
+                                                           postId: self.posts[cellRowNumber].postId)
+                }
+            } else {
+                posts[cellRowNumber].likes += 1
+                posts[cellRowNumber].didLike = true
+                cell.viewModel?.post.likes += 1
+                cell.viewModel?.post.didLike = true
+                
+                PostService.likePost(post: posts[cellRowNumber]) { error in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
+                    
+                    if let error = error{
+                        print(error.localizedDescription)
+                    }
+                    NotificationService.uploadNotification(toUid: ownerUid, fromUser: user,
+                                                           type: .like, post: self.posts[cellRowNumber])
+                }
             }
-        } else {
-            posts[cellRowNumber].likes += 1
-            posts[cellRowNumber].didLike = true
-            cell.viewModel?.post.likes += 1
-            cell.viewModel?.post.didLike = true
-            PostService.likePost(post: posts[cellRowNumber]) { _ in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
-                NotificationService.uploadNotification(toUid: ownerUid, fromUser: user,
-                                                       type: .like, post: self.posts[cellRowNumber])
+            
+        }else{
+            let ownerUid = self.post!.ownerUid
+            
+            if self.post!.didLike {
+                self.post!.likes -= 1   //以下の2つは現在のグローバルな[Post]を直接アップデートし、dequeueしてできるcellでの表示を合わせる為。
+                self.post!.didLike = false
+                cell.viewModel?.post.likes -= 1    //以下の2つは即席で今見えている画面のUIの辻褄を合わせる為。これだけだとdequeueCellでバグになるので上の2つが必要
+                cell.viewModel?.post.didLike = false
+                PostService.unlikePost(post: self.post!) { _ in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
+                    NotificationService.deleteNotification(toUid: ownerUid, type: .like,
+                                                           postId: self.post!.postId)
+                }
+            } else {
+                self.post!.likes += 1
+                self.post!.didLike = true
+                cell.viewModel?.post.likes += 1
+                cell.viewModel?.post.didLike = true
+                PostService.likePost(post: self.post!) { _ in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
+                    NotificationService.uploadNotification(toUid: ownerUid, fromUser: user,
+                                                           type: .like, post: self.self.post!)
+                }
             }
         }
     }
+    
     
     func cell(_ cell: FeedCell, wantsToShowCommentsFor post: Post, image: UIImage, caption: String) {
         let vc = CommentController(post: post)
@@ -364,7 +405,7 @@ extension FeedController {
         cell.captionLabel.handleMentionTap { username in
             self.showLoader(true)
             UserService.fetchUser(withUsername: username) { user in
-                self.showLoader(false)
+                self.showLoader(false)   //返り値のuserはオプショナルでエラーの場合にもここに値が返るようにしてあるので問題ない。
                 
                 if let user = user {
                     let vc = ProfileController(user: user)
@@ -390,6 +431,7 @@ extension FeedController {
 }
 
 extension FeedController: SearchControllerDelegate{
+    
     func controller(_ controller: SearchController, wantsToStartChatWith user: User) {
     }
     

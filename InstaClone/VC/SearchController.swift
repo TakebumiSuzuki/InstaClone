@@ -196,6 +196,7 @@ extension SearchController: UISearchResultsUpdating {
                 tableView.isHidden = true
                 PostService.fetchPosts(forHashtag: detectedHashtag) { (posts) in
                     self.filteredPosts = posts
+                    print(self.filteredPosts)
                     self.collectionView.reloadData()
                 }
                 
@@ -341,7 +342,7 @@ extension SearchController: UICollectionViewDelegate { //.allの時にPostタッ
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
         let vc = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
-        vc.post = posts[indexPath.row]
+        vc.post = inSearchMode ? filteredPosts[indexPath.row] : posts[indexPath.row]
         navigationController?.pushViewController(vc, animated: true)
     }
 }

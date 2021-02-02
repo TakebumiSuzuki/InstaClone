@@ -27,14 +27,13 @@ class NotificationsController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configureTableView()
-        fetchNotifications() //viewWillAppearに入れるべきではと。
+        fetchNotifications() //viewWillAppearに入れるべきではと。。
     }
     
     
     // MARK: - Helpers
     
     func configureTableView() {
-        
         view.backgroundColor = .white
         navigationItem.title = "Notifications"
         
@@ -49,35 +48,53 @@ class NotificationsController: UITableViewController {
     // MARK: - API
     
     func fetchNotifications() {
-        NotificationService.fetchNotifications { notifications in
-            //ここではなく、checkIfUserIsFollowe()の後にnotificationを代入すべき。その際にはdispatchQueueが必要になるが。。
-            self.notifications = notifications  //APIからの返り値である右辺のnotificationsはmutateできないのでglobal変数にここでコピーしている。
-            self.checkIfUserIsFollowed()
+        NotificationService.fetchNotifications { result in
+            switch result{
+            case .failure(let error):
+                self.refresher.endRefreshing()
+                print("DEBUG: Error fetching notifications.\(error)")
+            case .success(let notifications):
+                self.notifications = notifications  //APIからの返り値である右辺のnotificationsはmutateできないのでglobal変数にここでコピーしている。
+                self.checkIfUserIsFollowed()
+            }
         }
     }
     
     func checkIfUserIsFollowed() {
+        let group = DispatchGroup()
+        
         notifications.forEach { notification in  //ここで新しく定義したnotificationはletとして扱われるのでmutateできない。
-            guard notification.type == .follow else { return }   //.follow関連のnotificationの時のみチェック。
+            group.enter()
+            guard notification.type == .follow else { group.leave(); return }   //.follow関連のnotificationの時のみチェック。
             
             //notificationはmutateできないので以下のような作業をし、元になるnotificationsの各要素を直接書き換えている。
-            UserService.checkIfUserIsFollowed(uid: notification.uid) { isFollowed in
-                if let index = self.notifications.firstIndex(where: { $0.id == notification.id }) {
-                    self.notifications[index].userIsFollowed = isFollowed
-                    self.refresher.endRefreshing()
-                    print("ENDEND")
+            UserService.checkIfUserIsFollowed(uid: notification.uid) { result in
+                switch result{
+                case .failure(let error):
+                    group.leave()
+                    print("DEBUG: Error checking if user is follwed \(error.localizedDescription)")
+                case .success(let isFollowed):
+                    if let index = self.notifications.firstIndex(where: { $0.id == notification.id }) {
+                        self.notifications[index].userIsFollowed = isFollowed
+                        group.leave()
+                        self.refresher.endRefreshing()
+                    }else{
+                        group.leave()
+                    }
                 }
             }
+        }
+        group.notify(queue: .main) {
+            self.refresher.endRefreshing()
         }
     }
     
     // MARK: - Actions
     
     @objc func handleRefresh() {
-        fetchNotifications()  //asyncなので、次のrefresher問題あるのでは？
+        fetchNotifications()  //この処理の中でエラーハンドリングをしっかりしたので問題ないと思うが、念のために下の10秒ルールを課しておく。
         DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) {
             self.refresher.endRefreshing()
-            print("refresher JUST ENDED")
         }
     }
 }
@@ -104,9 +121,8 @@ extension NotificationsController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         UserService.fetchUser(withUid: notifications[indexPath.row].uid) { user in
-
-            let controller = ProfileController(user: user)
-            self.navigationController?.pushViewController(controller, animated: true)
+            let vc = ProfileController(user: user)
+            self.navigationController?.pushViewController(vc, animated: true)
         }
     }
 }
@@ -115,21 +131,22 @@ extension NotificationsController {
 
 extension NotificationsController: NotificationCellDelegate {
     
-    //followボタンを押した時、firebase上の情報を返納した後、viewModel上の情報をローカルで変更
+    //followボタンを押した時。firebase上の情報を更新した後、viewModel上の情報をローカルで変更。合計3つの工程を経る必要がある。
     func cell(_ cell: NotificationCell, wantsToFollow uid: String) {
         guard let tab = tabBarController as? MainTabController else{ return }
         guard let user = tab.user else{ return }
         
-        cell.viewModel?.notification.userIsFollowed.toggle()  //即席でUIを対応させる為のコード
+        cell.viewModel?.notification.userIsFollowed.toggle()  //1.即席でUIを対応させる為のコード
         if let indexPath = tableView.indexPath(for: cell){
-            notifications[indexPath.row].userIsFollowed = true //グローバル変数のnotificationsを変えることによりスクロール時のdequeue対応。
+            notifications[indexPath.row].userIsFollowed = true //2.グローバル変数のnotificationsを変えることによりスクロール時のdequeue対応。
         }
-        UserService.follow(uid: uid) { (result) in
+        
+        UserService.follow(uid: uid) { (result) in  //3.firestore上のデータを書き換える
             switch result{
-            case .failure(_):
-                self.showSimpleAlert(title: "Network Error.Failed to Follow", message: "Please try later again.", actionTitle: "ok")
-            case .success(_):
-                print("NOTIFICATION FOLLOWに成功しました")
+            case .failure(let error):
+//                self.showSimpleAlert(title: "Network Error.Failed to Follow", message: "Please try later again.", actionTitle: "ok")
+                print("DEBUG: Error following process in Firestore. \(error.localizedDescription)")
+            case .success(_):   //ここには"succeed"と書いたが入ったerrorが返ってくるが使わない。
                 NotificationService.uploadNotification(toUid: uid, fromUser: user, type: .follow)
             }
         }
@@ -138,16 +155,17 @@ extension NotificationsController: NotificationCellDelegate {
     
     func cell(_ cell: NotificationCell, wantsToUnfollow uid: String) {
         
-        cell.viewModel?.notification.userIsFollowed.toggle()
+        cell.viewModel?.notification.userIsFollowed.toggle()  //1.即席でUIを対応させる為のコード
+        
         if let indexPath = tableView.indexPath(for: cell){
-            notifications[indexPath.row].userIsFollowed = false
+            notifications[indexPath.row].userIsFollowed = false //2.グローバル変数のnotificationsを変えることによりスクロール時のdequeue対応。
         }
         UserService.unfollow(uid: uid){ (result) in
             switch result{
-            case .failure(_):
-                self.showSimpleAlert(title: "Network Error.Failed to unfollow", message: "Please try later again.", actionTitle: "ok")
+            case .failure(let error):
+//                self.showSimpleAlert(title: "Network Error.Failed to unfollow", message: "Please try later again.", actionTitle: "ok")
+                print("DEBUG: Error unfollowing process in Firestore. \(error.localizedDescription)")
             case .success(_):
-                print("NOTIFICATION FOLLOWに成功しました")
                 NotificationService.deleteNotification(toUid: uid, type: .follow)
             }
         }

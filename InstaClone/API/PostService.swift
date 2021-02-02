@@ -108,26 +108,44 @@ struct PostService {
         }
     }
     
-    //FeelControllerから。----------------------------------------------------------------------------
-    static func likePost(post: Post, completion: @escaping(FirestoreCompletion)) {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+    //FeedControllerから。----------------------------------------------------------------------------
+    static func likePost(post: Post, completion: @escaping (Error?) -> Void) {
+        guard let uid = Auth.auth().currentUser?.uid else { completion(CustomError.currentUserNil); return }
+        let group = DispatchGroup()
         
-        COLLECTION_POSTS.document(post.postId).updateData(["likes": post.likes])
-        
+        group.enter()  //この下ではクライアント上で先にカウント+1したlike数をそのまま書き込んでいるが、これはバグの元になるので書き換え必要。
+        COLLECTION_POSTS.document(post.postId).updateData(["likes": post.likes]) { (error) in
+            if let error = error{ completion(error); return}
+            group.leave()
+        }
+        group.enter()
         let timestamp = Timestamp(date: Date())
-        COLLECTION_POSTS.document(post.postId).collection("post-likes").document(uid).setData(["timestamp": timestamp]) { _ in
+        COLLECTION_POSTS.document(post.postId).collection("post-likes").document(uid).setData(["timestamp": timestamp]) { (error) in
+            if let error = error{ completion(error); return}
+            group.leave()
         }
+        
+        group.notify(queue: .main) { completion(nil) }
     }
+    
     //FeelControllerから。----------------------------------------------------------------------------
-    static func unlikePost(post: Post, completion: @escaping(FirestoreCompletion)) {
+    static func unlikePost(post: Post, completion: @escaping (Error?) -> Void) {
+        guard let uid = Auth.auth().currentUser?.uid else { completion(CustomError.currentUserNil); return }
+        guard post.likes >= 0 else { completion(CustomError.currentUserNil); return }
+        let group = DispatchGroup()
         
-        guard let uid = Auth.auth().currentUser?.uid else { return }
-        guard post.likes >= 0 else { return }
-        
-        COLLECTION_POSTS.document(post.postId).updateData(["likes": post.likes])
-        
-        COLLECTION_POSTS.document(post.postId).collection("post-likes").document(uid).delete { _ in
+        group.enter()  //この下ではクライアント上で先にカウント+1したlike数をそのまま書き込んでいるが、これはバグの元になるので書き換え必要。
+        COLLECTION_POSTS.document(post.postId).updateData(["likes": post.likes]) { (error) in
+            if let error = error{ completion(error); return}
+            group.leave()
         }
+        group.enter()
+        COLLECTION_POSTS.document(post.postId).collection("post-likes").document(uid).delete { (error) in
+            if let error = error{ completion(error); return}
+            group.leave()
+        }
+        
+        group.notify(queue: .main) { completion(nil) }
     }
     
     //FeelControllerから。----------------------------------------------------------------------------
