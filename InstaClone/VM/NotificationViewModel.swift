@@ -9,10 +9,10 @@ import UIKit
 
 struct NotificationViewModel {
     
+    var notification: Notification
     init(notification: Notification) {
         self.notification = notification
     }
-    var notification: Notification
     
     
     var postImageUrl: URL? { return URL(string: notification.postImageUrl ?? "") }
@@ -20,11 +20,13 @@ struct NotificationViewModel {
     var profileImageUrl: URL? { return URL(string: notification.userProfileImageUrl) }
     
     var timestampString: String? {
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = [.second, .minute, .hour, .day, .weekOfMonth]
-        formatter.maximumUnitCount = 1
-        formatter.unitsStyle = .abbreviated
-        return formatter.string(from: notification.timestamp.dateValue(), to: Date())
+//        let formatter = DateComponentsFormatter()
+//        formatter.allowedUnits = [.second, .minute, .hour, .day, .weekOfMonth]
+//        formatter.maximumUnitCount = 1
+//        formatter.unitsStyle = .abbreviated
+//        return formatter.string(from: notification.timestamp.dateValue(), to: Date())
+        
+        return TimestampService.getStringDate(timeStamp: notification.timestamp)
     }
     
     var notificationMessage: NSAttributedString {
@@ -33,7 +35,7 @@ struct NotificationViewModel {
         
         let attributedText = NSMutableAttributedString(string: username, attributes: [.font: UIFont.boldSystemFont(ofSize: 14)])
         attributedText.append(NSAttributedString(string: message, attributes: [.font: UIFont.systemFont(ofSize: 14)]))
-        attributedText.append(NSAttributedString(string: " \(timestampString ?? "")", attributes: [.font: UIFont.systemFont(ofSize: 12), .foregroundColor: UIColor.lightGray]))
+        attributedText.append(NSAttributedString(string: "  \(timestampString ?? "")", attributes: [.font: UIFont.systemFont(ofSize: 12), .foregroundColor: UIColor.lightGray]))
         
         return attributedText
     }

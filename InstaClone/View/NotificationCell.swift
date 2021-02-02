@@ -18,7 +18,7 @@ class NotificationCell: UITableViewCell {
     // MARK: - Properties
     
     //cell生成時Notificationを使って作られ、ここに代入される。
-    //notificatonオブジェクトのuserIsFollowedプロパティに変更があるとdidSetが発火しcellが自動アップデートされる。
+    //notificatonオブジェクトのuserIsFollowedプロパティに変更があるとdidSetが発動しcellが自動アップデートされる。
     var viewModel: NotificationViewModel? {
         didSet { configure() }
     }
@@ -56,7 +56,7 @@ class NotificationCell: UITableViewCell {
     private lazy var followButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("Loading", for: .normal)
-        button.layer.cornerRadius = 3
+        button.layer.cornerRadius = 6
         button.layer.borderColor = UIColor.lightGray.cgColor
         button.layer.borderWidth = 0.5
         button.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)

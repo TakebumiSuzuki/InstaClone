@@ -84,9 +84,10 @@ class ConversationsController: UIViewController {
     // MARK: - Actions
     
     @objc func showNewMessage() {  //メッセージの新規作成。searchControllerに.messageを入れてpresentしている。
-        let controller = SearchController(config: .messages)
-        controller.delegate = self
-        let nav = UINavigationController(rootViewController: controller)
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        let vc = SearchController(config: .messages(uid))
+        vc.delegate = self
+        let nav = UINavigationController(rootViewController: vc)
         present(nav, animated: true, completion: nil)
     }
     
@@ -135,6 +136,9 @@ extension ConversationsController: UITableViewDelegate {
 // MARK: - NewMessageControllerDelegate
 
 extension ConversationsController: SearchControllerDelegate { //SearchControllerから呼ばれる。
+    
+    func controller(_ controller: SearchController, wantsToShowSelectedUser user: User) {
+    }
     
     func controller(_ controller: SearchController, wantsToStartChatWith user: User) {
         dismiss(animated: true, completion: nil)

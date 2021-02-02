@@ -64,8 +64,12 @@ struct UserService {
         case .likes(let postId):
             let ref = COLLECTION_POSTS.document(postId).collection("post-likes")
             fetchUsers(fromCollection: ref, completion: completion)
+        
+        case .messages(let uid):
+            let ref = COLLECTION_FOLLOWING.document(uid).collection("user-following")
+            fetchUsers(fromCollection: ref, completion: completion)
             
-        case .all, .messages:  //全ユーザー取得。
+        case .all:  //全ユーザー取得。
             COLLECTION_USERS.getDocuments { (snapshot, error) in
                 guard let snapshot = snapshot else { return }
                 
@@ -76,6 +80,7 @@ struct UserService {
     }
     //FeedControllerから。完全な分岐追跡とエラーハンドリングができている-----------------------------------------------------------
     static func follow(uid: String, completion: @escaping (Result<String, Error>) -> Void) {
+        print("follow")
         guard let currentUid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return}
         let timestamp = Timestamp(date: Date())
         COLLECTION_FOLLOWING.document(currentUid).collection("user-following").document(uid).setData(["timestamp": timestamp]) { error in
@@ -95,7 +100,8 @@ struct UserService {
                     COLLECTION_USERS.document(currentUid).collection("user-feed")
                         .document($0.documentID).setData(dictionary) { (error) in
                             if let error = error{ completion(.failure(error)); return }
-                            completion(.success("Scceed2"))
+                            //ここでcompletion(.success())は必要ない。なぜなら既に一度上の方で呼んでいるから。
+                            // ここにもう一度completionを書くと、複数回escapintCompHandlerが起動することになってしまう。
                         }
                 }
             }
@@ -104,12 +110,13 @@ struct UserService {
     //FeedControllerから。完全な分岐追跡とエラーハンドリングができている----------------------------------------------------------------------
     static func unfollow(uid: String, completion: @escaping (Result<String, Error>) -> Void) {
         guard let currentUid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return}
-        
+        print("unfollow")
         COLLECTION_FOLLOWING.document(currentUid).collection("user-following").document(uid).delete { error in
             if let error = error{ completion(.failure(error)); return }
             COLLECTION_FOLLOWERS.document(uid).collection("user-followers").document(currentUid).delete { (error) in
                 if let error = error{ completion(.failure(error)); return }
                 completion(.success("Succeed1"))
+                print("succeed1")
             }
         }
         COLLECTION_USERS.document(currentUid).collection("user-feed")
@@ -118,7 +125,8 @@ struct UserService {
                 guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
                 documents.forEach({ $0.reference.delete { (error) in
                     if let error = error{ completion(.failure(error)); return }
-                    completion(.success("Scceed2"))
+                    //ここでcompletion(.success())は必要ない。なぜなら既に一度上の方で呼んでいるから。
+                    // ここにもう一度completionを書くと、複数回escapintCompHandlerが起動することになってしまう。
                 }})
                 
             }

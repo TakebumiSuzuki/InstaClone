@@ -186,7 +186,9 @@ extension ProfileController: ProfileHeaderDelegate {
             showEditProfileController()
             
         } else if user.isFollowed {    //すでにフォローしている人のプロフィールを見ている場合→アンフォロー
+            
             UserService.unfollow(uid: user.uid) { error in
+                
                 self.user.isFollowed = false  //こうしてisFollowedプロパティが変更されるとuserのdidSetが起動する。
                 self.user.stats.followers -= 1
                 NotificationService.deleteNotification(toUid: user.uid, type: .follow)
@@ -194,6 +196,7 @@ extension ProfileController: ProfileHeaderDelegate {
             
         } else {     //フォローしていない人の写真を見ている場合→フォロー
             UserService.follow(uid: user.uid) { error in
+                
                 self.user.isFollowed = true
                 self.user.stats.followers += 1
                 NotificationService.uploadNotification(toUid: user.uid,
@@ -204,13 +207,19 @@ extension ProfileController: ProfileHeaderDelegate {
     }
     
     func header(_ profileHeader: ProfileHeader, wantsToViewFollowersFor user: User) {
-        let VC = SearchController(config: .followers(user.uid))
-        navigationController?.pushViewController(VC, animated: true)
+        let vc = SearchController(config: .followers(user.uid))
+        vc.delegate = self
+        let nav = UINavigationController(rootViewController: vc)
+        present(nav, animated: true, completion: nil)
+//        navigationController?.pushViewController(vc, animated: true)
     }
     
     func header(_ profileHeader: ProfileHeader, wantsToViewFollowingFor user: User) {
-        let VC = SearchController(config: .following(user.uid))
-        navigationController?.pushViewController(VC, animated: true)
+        let vc = SearchController(config: .following(user.uid))
+        vc.delegate = self
+        let nav = UINavigationController(rootViewController: vc)
+        present(nav, animated: true, completion: nil)
+//        navigationController?.pushViewController(vc, animated: true)
     }
 }
 
@@ -219,9 +228,9 @@ extension ProfileController: ProfileHeaderDelegate {
 extension ProfileController {
     
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let VC = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
-        VC.post = posts[indexPath.row]
-        navigationController?.pushViewController(VC, animated: true)
+        let vc = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
+        vc.post = posts[indexPath.row]
+        navigationController?.pushViewController(vc, animated: true)
     }
 }
 
@@ -235,4 +244,17 @@ extension ProfileController: EditProfileControllerDelegate {
         controller.dismiss(animated: true, completion: nil)
         self.user = user  //userが更新されるとdidSetでreloadされる。
     }
+}
+
+//MARK: - SearchControllerDelegate
+extension ProfileController: SearchControllerDelegate{
+    func controller(_ controller: SearchController, wantsToStartChatWith user: User) {
+    }
+    
+    func controller(_ controller: SearchController, wantsToShowSelectedUser user: User) {
+        dismiss(animated: true, completion: nil)
+        let vc = ProfileController(user: user)
+        navigationController?.pushViewController(vc, animated: true)
+    }
+    
 }

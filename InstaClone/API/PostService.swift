@@ -76,7 +76,7 @@ struct PostService {
         }
     }
     
-    //FeedControllerから。単体PostIDからPost作成-------------------------------------------------------------
+    //FeedController、NotificationControllerから。単体PostIDからPost作成-------------------------------------------------------------
     static func fetchPost(withPostId postId: String, completion: @escaping (Result<(Post), Error>) -> Void) {
         
         COLLECTION_POSTS.document(postId).getDocument { snapshot, error in

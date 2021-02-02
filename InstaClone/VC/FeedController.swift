@@ -297,6 +297,8 @@ extension FeedController: FeedCellDelegate {
         guard let tab = tabBarController as? MainTabController else { return }
         guard let user = tab.user else { return }
         
+        
+        
         guard let cellRowNumber = collectionView.indexPath(for: cell)?.row else { return }
         let ownerUid = posts[cellRowNumber].ownerUid
         
@@ -332,7 +334,9 @@ extension FeedController: FeedCellDelegate {
 
     func cell(_ cell: FeedCell, wantsToViewLikesFor postId: String) {
         let vc = SearchController(config: .likes(postId))
-        navigationController?.pushViewController(vc, animated: true)
+        vc.delegate = self
+        let nav = UINavigationController(rootViewController: vc)
+        present(nav, animated: true, completion: nil)
     }
     
     
@@ -383,6 +387,19 @@ extension FeedController {
             self.present(vc, animated: true, completion: nil)
         }
     }
+}
 
+extension FeedController: SearchControllerDelegate{
+    func controller(_ controller: SearchController, wantsToStartChatWith user: User) {
+    }
+    
+    func controller(_ controller: SearchController, wantsToShowSelectedUser user: User) {
+        dismiss(animated: true, completion: nil)
+        let vc = ProfileController(user: user)
+        navigationController?.pushViewController(vc, animated: true)
+    }
+    
+    
+    
     
 }

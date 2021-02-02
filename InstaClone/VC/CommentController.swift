@@ -253,5 +253,5 @@ extension CommentController: CustomInputAccesoryViewDelegate {
                                                    fromUser: currentUser, type: .comment,
                                                    post: self.post)
         }
-    }
+    }   //現在コメントの削除機能は実装されていない。
 }

@@ -7,18 +7,26 @@
 
 
 import UIKit
+import Firebase
 
 private let reuseIdentifier = "UserCell"  //tableViewのcell
 private let postCellIdentifier = "PostCell"  //collectionViewのcell
+
+//.messageモードでcellをタップした場合にチャットスタートするためだけに使われる。
+protocol SearchControllerDelegate: class {
+    func controller(_ controller: SearchController, wantsToStartChatWith user: User)
+    func controller(_ controller: SearchController, wantsToShowSelectedUser user: User )
+}
+
 
 
 //このUserFilterConfigはinitの際に同時に代入される。
 enum UserFilterConfig: Equatable {  //Equatableがあるとイコールが使える。条件分岐で使えるという事。
     
-    case followers(String)  //profileページのfollower押した時。Stringにはuidが入る
-    case following(String)  //profileページのfollowing押した時。Stringにはuidが入る
+    case followers(String)  //profileページのfollower押した時。Stringには自分のuidが入る
+    case following(String)  //profileページのfollowing押した時。Stringには自分のuidが入る
     case likes(String)  //feedページのlike押した時。StringにはpostIDが入る
-    case messages  //ConversationsControllerのshowNewMessageから何も引数なしで遷移される
+    case messages(String)  //ConversationsControllerのshowNewMessageから。Stringには自分のuidが入る。
     case all  //tabからのアクセス初期画面。この時のみtableViewが隠れ、collectionViewが表示される。これ以外は全てtableViewのみ表示。
     
     var navigationItemTitle: String {  //navBar表示用
@@ -30,11 +38,6 @@ enum UserFilterConfig: Equatable {  //Equatableがあるとイコールが使え
         case .all: return "Search"  //最初の画面は全ポスト表示。.messagesと.allの場合はuserは全登録者表示。
         }
     }
-}
-
-//.messageモードでcellをタップした場合にチャットスタートするためだけに使われる。
-protocol SearchControllerDelegate: class {
-    func controller(_ controller: SearchController, wantsToStartChatWith user: User)
 }
 
 
@@ -171,7 +174,7 @@ extension SearchController: UISearchResultsUpdating {
         }
         
         if inSearchMode{    //以下は実際に文字が打ち込まれてサーチ状態になっている時。
-            print("その他実際のサーチモードの時")
+            
             guard let rawText = searchController.searchBar.text else { return }
             let text = rawText.trimmingCharacters(in: .whitespaces)
             
@@ -179,6 +182,7 @@ extension SearchController: UISearchResultsUpdating {
                 collectionView.isHidden = true
                 tableView.isHidden = false
                 searchWithName(text: text.lowercased())
+                print("count<2")
                 return
             }
             
@@ -204,6 +208,7 @@ extension SearchController: UISearchResultsUpdating {
                 collectionView.isHidden = true
                 tableView.isHidden = false
                 searchWithName(text: text.lowercased())
+                print("通常のfullname & username 検索")
             }
         }
     }
@@ -213,7 +218,7 @@ extension SearchController: UISearchResultsUpdating {
         filteredUsers = users.filter({
             $0.username.contains(text) || $0.fullname.lowercased().contains(text)
         })
-        
+        self.tableView.reloadData()
     }
     
     func searchWithMention(text: String){   //ユーザーネームからのみ検索
@@ -276,13 +281,18 @@ extension SearchController: UITableViewDelegate {
     
     //tableViewのcellをタップしたときは、.messageの場合のみチャットスタート、それ以外はProfileControllerがpushされる
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        guard let uid = Auth.auth().currentUser?.uid else {return}
         
-        if config == .messages {
+        if config == .messages(uid){  //uidは以下では使っていないが、これが正しくないと実行されない。
             delegate?.controller(self, wantsToStartChatWith: users[indexPath.row])  //ConversationsControllerがdelegate
         } else {
             let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
-            let controller = ProfileController(user: user)
-            navigationController?.pushViewController(controller, animated: true)
+            if let delegate = delegate{  //tabBar以外からの表示の場合。
+                delegate.controller(self, wantsToShowSelectedUser: user)
+            }else{   //tabBarからの表示の場合
+                let vc = ProfileController(user: user)
+                navigationController?.pushViewController(vc, animated: true)
+            }
         }
     }
 }

@@ -32,6 +32,7 @@ struct NotificationService {
         docRef.setData(data)
     }
     
+    //profileControllerから。
     static func deleteNotification(toUid uid: String, type: NotificationType, postId: String? = nil) {
         guard let currentUid = Auth.auth().currentUser?.uid else { return }
         
@@ -50,6 +51,7 @@ struct NotificationService {
             }
     }
     
+    //-------------------------------------------------------------------------------------------------------
     static func fetchNotifications(completion: @escaping ([Notification]) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         
