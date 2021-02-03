@@ -15,7 +15,7 @@ class ConversationCell: UITableViewCell {
         didSet { configure() }
     }
     
-    let profileImageView: UIImageView = {
+    let chatPartnerImageView: UIImageView = {
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFill
         iv.clipsToBounds = true
@@ -23,7 +23,7 @@ class ConversationCell: UITableViewCell {
         return iv
     }()
     
-    let usernameLabel: UILabel = {
+    let chatPartnerNameLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.boldSystemFont(ofSize: 14)
         return label
@@ -51,19 +51,19 @@ class ConversationCell: UITableViewCell {
         
         selectionStyle = .none
         
-        addSubview(profileImageView)
-        profileImageView.anchor(left: leftAnchor, paddingLeft: 12)
-        profileImageView.setDimensions(height: 50, width: 50)
-        profileImageView.layer.cornerRadius = 50 / 2
-        profileImageView.centerY(inView: self)
+        addSubview(chatPartnerImageView)
+        chatPartnerImageView.anchor(left: leftAnchor, paddingLeft: 12)
+        chatPartnerImageView.setDimensions(height: 50, width: 50)
+        chatPartnerImageView.layer.cornerRadius = 50 / 2
+        chatPartnerImageView.centerY(inView: self)
         
-        let stack = UIStackView(arrangedSubviews: [usernameLabel, messageTextLabel])
+        let stack = UIStackView(arrangedSubviews: [chatPartnerNameLabel, messageTextLabel])
         stack.axis = .vertical
         stack.spacing = 4
         
         addSubview(stack)
-        stack.centerY(inView: profileImageView)
-        stack.anchor(left: profileImageView.rightAnchor, right: rightAnchor, paddingLeft: 12, paddingRight: 16)
+        stack.centerY(inView: chatPartnerImageView)
+        stack.anchor(left: chatPartnerImageView.rightAnchor, right: rightAnchor, paddingLeft: 12, paddingRight: 16)
         
         addSubview(timestampLabel)
         timestampLabel.anchor(top: topAnchor, right: rightAnchor, paddingTop: 20, paddingRight: 12)
@@ -79,10 +79,9 @@ class ConversationCell: UITableViewCell {
     func configure() {
         guard let viewModel = viewModel else { return }
         
-        usernameLabel.text = viewModel.username  //ロジックに問題がある。usernameというのが相対化されていない
+        chatPartnerImageView.sd_setImage(with: viewModel.chatPartnerImageUrl)
+        chatPartnerNameLabel.text = viewModel.chatPartnerName
         messageTextLabel.text = viewModel.messageText
-        
         timestampLabel.text = viewModel.timestampString
-        profileImageView.sd_setImage(with: viewModel.profileImageUrl) //ロジックに問題がある。profileImageUrlが相対化されていない
     }
 }

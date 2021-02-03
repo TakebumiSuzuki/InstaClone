@@ -6,23 +6,25 @@
 //
 
 import UIKit
+import Firebase
 
 struct MessageViewModel {
     
     init(message: Message) {
         self.message = message
     }
-    private let message: Message
+    let message: Message
     
-    
-    var profileImageUrl: URL? { return URL(string: message.profileImageUrl) }
-    
-    var username: String { return message.username }
     
     var messageText: String { return message.text }
     
+    var chatPartnerImageUrl: URL? { return URL(string: message.chatPartnerImageUrl) }
+    
+    var chatPartnerName: String { return message.chatPartnerName }
+    
+    
     var timestampString: String? {
-        guard let date = message.timestamp else { return nil }
+        let date = message.timestamp.dateValue()
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "hh:mm a"
         return dateFormatter.string(from: date)

@@ -12,7 +12,7 @@ private let reuseIdentifier = "MessageCell"
 class ChatController: UICollectionViewController {
     
     // MARK - Properties
-    
+    let messagingService = MessagingService()
     private let user: User    //会話相手のUserオブジェクト。インスタンス化時に代入される
     
     private var messages = [Message]()
@@ -24,6 +24,7 @@ class ChatController: UICollectionViewController {
         iv.delegate = self
         return iv
     }()
+    
     
     // MARK: - Lifecycle
      
@@ -39,7 +40,13 @@ class ChatController: UICollectionViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configureUI()
+        
+    }
+    override func viewWillAppear(_ animated: Bool) {
         fetchMessages()
+    }
+    override func viewWillDisappear(_ animated: Bool) {
+        messagingService.chatListener.remove()
     }
 
     override var inputAccessoryView: UIView? {
@@ -51,6 +58,7 @@ class ChatController: UICollectionViewController {
     }
     
     
+    
     // MARK: - Helpers
     
     func configureUI() {
@@ -58,8 +66,11 @@ class ChatController: UICollectionViewController {
         navigationItem.title = user.username
         
         collectionView.register(MessageCell.self, forCellWithReuseIdentifier: reuseIdentifier)
+        
         collectionView.alwaysBounceVertical = true
         collectionView.keyboardDismissMode = .interactive
+        
+        collectionView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 12, right: 0)
     }
     
     // MARK: - API
@@ -67,7 +78,8 @@ class ChatController: UICollectionViewController {
     func fetchMessages() {
         
         //自分と相手のuidからsnapshotListenerで[message]をget。reloadData()でcellを作る時にMessageViewModelを作って代入。
-        MessagingService.fetchMessages(forUser: user) { messages in
+        messagingService.fetchMessages(forUser: user) { (messages) in
+            
             self.messages = messages
             self.collectionView.reloadData()
             self.collectionView.scrollToItem(at: [0, self.messages.count - 1],
@@ -87,8 +99,15 @@ extension ChatController {
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! MessageCell
         cell.viewModel = MessageViewModel(message: messages[indexPath.row])
+        if indexPath.row % 3 != 0{
+            cell.dateCellHeader.removeFromSuperview()
+        }
+        
+        
+        
         return cell
     }
+    
 }
 
 extension ChatController: UICollectionViewDelegateFlowLayout {
@@ -96,6 +115,11 @@ extension ChatController: UICollectionViewDelegateFlowLayout {
     //reloadの度に一回だけ呼ばれるみたい
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return .init(top: 16, left: 0, bottom: 16, right: 0)
+    }
+    
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
+        return 15
     }
     
     //各cell生成の際にindexPathごとに(つまり毎回)呼ばれる。widthはviewのwithそのまま、heightのみ算出している。このやり方は覚えるのが良いかと。
@@ -118,15 +142,26 @@ extension ChatController: CustomInputAccesoryViewDelegate {
     
     func inputView(_ inputView: CustomInputAccesoryView, wantsToUploadText text: String) {
         
-        //重要。一回で4つの場所に同じmessageの辞書を保存する。自分と相手のドキュメント、そしてそれぞれのrecent-Messagesコレクション内。
         MessagingService.uploadMessage(text, to: user) { error in
             if let error = error {
                 print("DEBUG: Failed to upload message with error \(error.localizedDescription)")
                 return
             }
-            
-            inputView.clearInputText()  //このラインはハンドラの外に出すべき
         }
+        inputView.clearInputText()  //このラインはハンドラの外に出すべき
     }
+}
+
+class dateHeaderView: UICollectionReusableView {
+    
+    override init(frame: CGRect) {
+            super.init(frame: frame)
+            self.backgroundColor = UIColor.red
+        }
+
+        required init?(coder aDecoder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+    
 }
 

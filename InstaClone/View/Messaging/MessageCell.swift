@@ -1,5 +1,5 @@
 //
-//  ChatChell.swift
+//  MessageCell.swift
 //  InstaClone
 //
 //  Created by TAKEBUMI SUZUKI on 1/27/21.
@@ -21,6 +21,15 @@ class MessageCell: UICollectionViewCell {
     var bubbleLeftAnchor: NSLayoutConstraint!
     var bubbleRightAnchor: NSLayoutConstraint!
 
+    let dateCellHeader: UITextField = {
+        let tf = UITextField()
+        tf.textAlignment = .center
+        tf.font = UIFont.systemFont(ofSize: 12)
+        tf.textColor = .systemGray
+        tf.text = "test"
+        return tf
+    }()
+    
     private let profileImageView: UIImageView = {  //これのisHiddenプロパティはviewModelによって処理される
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFill
@@ -50,19 +59,18 @@ class MessageCell: UICollectionViewCell {
     override init(frame: CGRect) {  //UICollectionViewCellの中のcontentViewの仕組みがまだわかっていない
         super.init(frame: frame)
         
+        addSubview(dateCellHeader)
+        dateCellHeader.anchor(top: topAnchor, left: leftAnchor, right: rightAnchor, height: 20)
         addSubview(profileImageView)  //paddingBottomが-4な為、わずかにプロフィール丸画像が下にずれる。
         //ちなみに、self.clipsToBounds = trueとすると、丸画像の下が切れる。
-        profileImageView.anchor(left: leftAnchor, bottom: bottomAnchor, paddingLeft: 8, paddingBottom: -4)
-        profileImageView.setDimensions(height: 32, width: 32)
-        profileImageView.layer.cornerRadius = 32 / 2
+        profileImageView.anchor(left: leftAnchor, bottom: bottomAnchor, paddingLeft: 12, paddingBottom: -4)
+        profileImageView.setDimensions(height: 36, width: 36)
+        profileImageView.layer.cornerRadius = 36 / 2
         
-//        addSubview(bubbleContainer)
-//        bubbleContainer.layer.cornerRadius = 12  //この2行多分いらないのでコメントアウトする。
-
         addSubview(bubbleContainer)
-        bubbleContainer.layer.cornerRadius = 12
-        bubbleContainer.anchor(top: topAnchor, bottom: bottomAnchor)
-        bubbleContainer.widthAnchor.constraint(lessThanOrEqualToConstant: 250).isActive = true
+        bubbleContainer.layer.cornerRadius = 11
+        bubbleContainer.anchor(top: dateCellHeader.bottomAnchor, bottom: bottomAnchor, paddingTop: 0)
+        bubbleContainer.widthAnchor.constraint(lessThanOrEqualToConstant: self.frame.width*3/5).isActive = true
         
         //以下のbubbleコンテナーの左右のconstraintのisActiveはviewModelによって処理される
         bubbleLeftAnchor = bubbleContainer.leftAnchor.constraint(equalTo: profileImageView.rightAnchor, constant: 12)
@@ -74,7 +82,7 @@ class MessageCell: UICollectionViewCell {
         bubbleContainer.addSubview(textView)
         textView.anchor(top: bubbleContainer.topAnchor, left: bubbleContainer.leftAnchor,
                         bottom: bubbleContainer.bottomAnchor, right: bubbleContainer.rightAnchor,
-                        paddingTop: 4, paddingLeft: 12, paddingBottom: 4, paddingRight: 12)
+                        paddingTop: 2, paddingLeft: 12, paddingBottom: 2, paddingRight: 12)
     }
 
     required init?(coder: NSCoder) {
@@ -87,15 +95,17 @@ class MessageCell: UICollectionViewCell {
     func configure() {
         guard let viewModel = viewModel else { return }
 
+        profileImageView.sd_setImage(with: viewModel.chatPartnerImageUrl)
+        textView.text = viewModel.messageText
+        
+        dateCellHeader.text = viewModel.timestampString
+        
         bubbleContainer.backgroundColor = viewModel.messageBackgroundColor
         bubbleContainer.layer.borderWidth = viewModel.messageBorderWidth
         bubbleContainer.layer.borderColor = UIColor.lightGray.cgColor
-        textView.text = viewModel.messageText
-
+        
+        profileImageView.isHidden = viewModel.shouldHideProfileImage
         bubbleLeftAnchor.isActive = viewModel.leftAnchorActive
         bubbleRightAnchor.isActive = viewModel.rightAnchorActive
-
-        profileImageView.isHidden = viewModel.shouldHideProfileImage
-        profileImageView.sd_setImage(with: viewModel.profileImageUrl)
     }
 }

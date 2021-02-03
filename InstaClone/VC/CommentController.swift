@@ -15,7 +15,7 @@ private let reuseIdentifier = "CommentCell"
 class CommentController: UIViewController {
     
     // MARK: - Properties
-    
+    let commentService = CommentService()
     private let post: Post
     var postViewModel: PostViewModel?  //Feedページと同じVMを使う為、画面遷移の際に渡してもらう。
     var image: UIImage?
@@ -74,7 +74,6 @@ class CommentController: UIViewController {
         configureCaptionLabel()
         configureCollectionView()
         configureUI()
-        fetchComments()
     }
     
     override var inputAccessoryView: UIView? {
@@ -87,16 +86,14 @@ class CommentController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        fetchComments()
         tabBarController?.tabBar.isHidden = true
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        commentService.commentListener.remove()
         tabBarController?.tabBar.isHidden = false
-    }
-    
-    deinit {
-        print("Comment View deinitting-----------------------------")
     }
     
     
@@ -177,12 +174,11 @@ class CommentController: UIViewController {
     
     func fetchComments() {
         
-        CommentService.fetchComments(forPost: post.postId) { [weak self] comments in
+        commentService.fetchComments(forPost: post.postId) { [weak self] comments in
             guard let self = self else { return }
             self.comments = comments
 
             DispatchQueue.main.async {
-                UIView.transition(with: self.collectionView, duration: 1.0, options: .transitionCrossDissolve, animations: {self.collectionView.reloadData()}, completion: nil)
                 self.collectionView.scrollToItem(at: IndexPath(row: 0, section: 0), at: .top, animated: true)
             }
         }

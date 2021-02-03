@@ -8,7 +8,9 @@
 
 import Firebase
 
-struct CommentService {
+class CommentService {
+    
+    var commentListener: ListenerRegistration!
     
     //FirestoreCompletionを使っておけば、errorはそのまま勝手に伝えてくれる。
     static func uploadComment(comment: String, post: Post, user: User, completion: @escaping (FirestoreCompletion)) {
@@ -25,19 +27,18 @@ struct CommentService {
     
     
     
-    static func fetchComments(forPost postID: String, completion: @escaping ([Comment]) -> Void) {
+    func fetchComments(forPost postID: String, completion: @escaping ([Comment]) -> Void) {
         
         var comments = [Comment]()
         let query = COLLECTION_POSTS.document(postID).collection("comments")
             .order(by: "timestamp", descending: true)
         
-        query.addSnapshotListener { (snapshot, error) in
+        commentListener = query.addSnapshotListener { (snapshot, error) in
             
             if let error = error{
                 print("DEBUG: Error during snapshotListening...\(error.localizedDescription)")
                 return
             }
-            print("----------------snapshotLISTENING")
             comments = []
             snapshot?.documents.forEach({ document in
                 let comment = Comment(dictionary: document.data())

@@ -15,26 +15,30 @@ class ConversationsController: UIViewController {
     // MARK: - Properties
     
     private let tableView = UITableView()
-    private var conversations = [Message]()
+    private var messages = [Message]()
     private var conversationsDictionary = [String: Message]()
+    
+    let messagingService = MessagingService()
     
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
         configureTableView()
-        fetchConversations()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        fetchConversations()
         tabBarController?.tabBar.isHidden = true
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         tabBarController?.tabBar.isHidden = false
+        messagingService.latestMessageListener.remove()
     }
+    
     
     // MARK: - Helpers
     
@@ -58,25 +62,17 @@ class ConversationsController: UIViewController {
                                                             action: #selector(showNewMessage))
     }
     
-    func showChatController(forUser user: User) {  //cellがdidSelectedの時に呼ばれる。userはパートナーのUserオブジェクト
-        let controller = ChatController(user: user)
-        navigationController?.pushViewController(controller, animated: true)
+    func showChatController(forUser user: User) {  //cellがdidSelectedの時または新規作成ページからのdelegateで呼ばれる。
+        let vc = ChatController(user: user)  //userはパートナーのUserオブジェクト
+        navigationController?.pushViewController(vc, animated: true)
     }
     
     // MARK: - API
     
-    func fetchConversations() {  //ここのロジックはおかしい。最初のconversationsと最後のconversationsが同一になってしまっている。
+    func fetchConversations() {
         
-        //messagesコレクション内の自分のdocID内のrecent-messages内のドキュメントをsnapshotListnerで時系列に取り出して[Message]にして返す
-        MessagingService.fetchRecentMessages { conversations in  //conversationsの実態はtimestamp順の[Message]
-            print(conversations)
-            conversations.forEach { conversation in
-                self.conversationsDictionary[conversation.chatPartnerId] = conversation
-                //ここでは["相手のID": Messageオブジェクト]という辞書を作っている事になる。
-            }
-            
-            self.conversations = Array(self.conversationsDictionary.values) //辞書の各値のみ取り出して配列にしている。
-            
+        messagingService.fetchRecentMessages { (messages) in   //listener使用
+            self.messages = messages
             self.tableView.reloadData()
         }
     }
@@ -101,13 +97,13 @@ class ConversationsController: UIViewController {
 
 extension ConversationsController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return conversations.count
+        return messages.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifier, for: indexPath) as! ConversationCell
         //チャットページと同じviewModelを共用しているが、こちらでは数個のプロパティのみ使用している。
-        cell.viewModel = MessageViewModel(message: conversations[indexPath.row])
+        cell.viewModel = MessageViewModel(message: messages[indexPath.row])
         return cell
     }
 }
@@ -119,7 +115,7 @@ extension ConversationsController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         showLoader(true)
         
-        UserService.fetchUser(withUid: conversations[indexPath.row].chatPartnerId) { user in
+        UserService.fetchUser(withUid: messages[indexPath.row].chatPartnerId) { user in
             self.showLoader(false)
             self.showChatController(forUser: user)
         }
@@ -140,6 +136,7 @@ extension ConversationsController: SearchControllerDelegate { //SearchController
     func controller(_ controller: SearchController, wantsToShowSelectedUser user: User) {
     }
     
+    //presentされている新規作成ページで誰か選んだ時に、そのページをdismissしてchatページをpushする。
     func controller(_ controller: SearchController, wantsToStartChatWith user: User) {
         dismiss(animated: true, completion: nil)
         showChatController(forUser: user)
