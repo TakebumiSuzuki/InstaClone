@@ -8,7 +8,7 @@
 import Foundation
 import Firebase
 
-struct User {
+class User {
     
     let email: String
     var fullname: String

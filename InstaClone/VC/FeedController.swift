@@ -17,7 +17,7 @@ private let reuseIdentifier = "Cell"
 class FeedController: UICollectionViewController {
     
     // MARK: - Lifecycle
-    
+    private var postService = PostService()
     private var posts = [Post]()
 //    {   //通常のfeed画面にはこちらの変数を使う
 //        didSet { collectionView.reloadData() }
@@ -33,13 +33,14 @@ class FeedController: UICollectionViewController {
         super.viewDidLoad()
         
         configureUI()
-        
         if post == nil{
-            fetchPosts()   //マルチポストモード
+            fetchPosts(isFirstFetch: true)  //マルチポストモード
         }else{
             checkSinglePostLiked()  //単体ポストモード
         }
     }
+    
+    
     
     // MARK: - Helpers
     
@@ -49,6 +50,7 @@ class FeedController: UICollectionViewController {
         collectionView.register(FeedCell.self, forCellWithReuseIdentifier: reuseIdentifier)
         
         navigationItem.title = "Feed"
+        
         if post == nil {  //単体ポストでない場合、つまり通常のfeed画面の場合は左右上にログアウトとメッセージへのリンクが付く
             navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Logout", style: .plain, target: self,
                                                                action: #selector(handleLogout))
@@ -59,7 +61,6 @@ class FeedController: UICollectionViewController {
         refresher.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
         collectionView.refreshControl = refresher   //UIScrollViewで定義されているプロパティ
     }
-    
     
     // MARK: - Actions
     
@@ -92,7 +93,8 @@ class FeedController: UICollectionViewController {
     
     @objc func handleRefresh() {
         if post == nil {  //マルチポストモード
-            fetchPosts()
+            PostService.lastPostDoc = nil
+            fetchPosts(isFirstFetch: true)
         }else{            //単体ポストモード
             updatePost()
         }
@@ -102,9 +104,10 @@ class FeedController: UICollectionViewController {
     
     // MARK: - API
     
-    func fetchPosts() {
+    func fetchPosts(isFirstFetch: Bool) {
         
-        PostService.fetchFeedPosts { result in   //自分のuidからfeed postを取得すると同時にdidLikeも代入。
+        PostService.fetchFeedPosts(isFirstFetch: isFirstFetch) { result in   //自分のuidからfeed postを取得すると同時にdidLikeも代入。
+            
             switch result{
             case .failure(let error):
                 self.collectionView.refreshControl?.endRefreshing()
@@ -113,13 +116,15 @@ class FeedController: UICollectionViewController {
                 
             case .success(let posts):
                 self.collectionView.refreshControl?.endRefreshing()
-                if posts.isEmpty{
+                if isFirstFetch{
                     self.posts = []
+                }
+                self.posts.append(contentsOf: posts)
+                if self.posts.isEmpty{
                     self.showSimpleAlert(title: "Search and Follow your friends to see posts!!", message: "", actionTitle: "ok")
                     self.collectionView.reloadData()
                     return
                 }
-                self.posts = posts
                 self.collectionView.reloadData()
             }
         }
@@ -193,7 +198,7 @@ extension FeedController {
         //このページ一番下のメソッド。各cell内のcaptionLabelにhashtag、mentionをタップした時の動作をattachする。hashtagをタップすると
         //HashtagPostControllerがpushされる。このタイミングで(cell上ではなくこのFeedController上で)この作業をする事により、delegateを作る手間を省ける。
         
-        if let post = post {
+        if let post = post {  //単体ポストの場合
             cell.viewModel = PostViewModel(post: post)
         } else {
             cell.viewModel = PostViewModel(post: posts[indexPath.row])
@@ -215,6 +220,22 @@ extension FeedController: UICollectionViewDelegateFlowLayout {
         
         return CGSize(width: width, height: height)
     }
+}
+
+
+//MARK: - UICollectionViewDelegate
+
+extension FeedController{
+    
+    override func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+        
+        if collectionView.contentOffset.y + view.frame.size.height - 100 > collectionView.contentSize.height{
+            fetchPosts(isFirstFetch: false)
+        }
+        
+    }
+    
+    
 }
 
 // MARK: - FeedCellDelegate
@@ -304,46 +325,46 @@ extension FeedController: FeedCellDelegate {
         guard let tab = tabBarController as? MainTabController else { return }
         guard let user = tab.user else { return }
         
-        if self.post == nil{
-            guard let cellRowNumber = collectionView.indexPath(for: cell)?.row else { return }
-            let ownerUid = posts[cellRowNumber].ownerUid
+        if self.post == nil{  //通常のfeed画面の場合
+            guard let row = collectionView.indexPath(for: cell)?.row else { return }
+            let ownerUid = posts[row].ownerUid
             
-            if posts[cellRowNumber].didLike {
-                posts[cellRowNumber].likes -= 1   //以下の2つは現在のグローバルな[Post]を直接アップデートし、dequeueしてできるcellでの表示を合わせる為。
-                posts[cellRowNumber].didLike = false
+            if posts[row].didLike {
+                posts[row].likes -= 1   //以下の2つは現在のグローバルな[Post]を直接アップデートし、dequeueしてできるcellでの表示を合わせる為。
+                posts[row].didLike = false
                 cell.viewModel?.post.likes -= 1    //以下の2つは即席で今見えている画面のUIの辻褄を合わせる為。これだけだとdequeueCellでバグになるので上の2つが必要
                 cell.viewModel?.post.didLike = false
                 
-                PostService.unlikePost(post: posts[cellRowNumber]) { error in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
+                PostService.unlikePost(post: posts[row]) { error in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
                     
                     if let error = error{
                         print(error.localizedDescription)
                     }
                     NotificationService.deleteNotification(toUid: ownerUid, type: .like,
-                                                           postId: self.posts[cellRowNumber].postId)
+                                                           postId: self.posts[row].postId)
                 }
             } else {
-                posts[cellRowNumber].likes += 1
-                posts[cellRowNumber].didLike = true
+                posts[row].likes += 1
+                posts[row].didLike = true
                 cell.viewModel?.post.likes += 1
                 cell.viewModel?.post.didLike = true
                 
-                PostService.likePost(post: posts[cellRowNumber]) { error in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
+                PostService.likePost(post: posts[row]) { error in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
                     
                     if let error = error{
                         print(error.localizedDescription)
                     }
                     NotificationService.uploadNotification(toUid: ownerUid, fromUser: user,
-                                                           type: .like, post: self.posts[cellRowNumber])
+                                                           type: .like, post: self.posts[row])
                 }
             }
             
-        }else{
+        }else{   //シングルポスト画面の場合
             let ownerUid = self.post!.ownerUid
             
             if self.post!.didLike {
                 self.post!.likes -= 1   //以下の2つは現在のグローバルな[Post]を直接アップデートし、dequeueしてできるcellでの表示を合わせる為。
-                self.post!.didLike = false
+                self.post!.didLike = false  //実はこのブロックはシングルポストなのでdequeueしないのでこれら２行は必要ないが残しておく。
                 cell.viewModel?.post.likes -= 1    //以下の2つは即席で今見えている画面のUIの辻褄を合わせる為。これだけだとdequeueCellでバグになるので上の2つが必要
                 cell.viewModel?.post.didLike = false
                 PostService.unlikePost(post: self.post!) { _ in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
@@ -441,7 +462,5 @@ extension FeedController: SearchControllerDelegate{
         navigationController?.pushViewController(vc, animated: true)
     }
     
-    
-    
-    
 }
+

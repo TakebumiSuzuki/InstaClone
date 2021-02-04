@@ -9,7 +9,7 @@
 import UIKit
 import Firebase
 
-struct PostService {
+class PostService {
     
     //[重要]投稿メソッド。Postモデルと見比べてみる事-------------------------------------------
     static func uploadPost(caption: String, image: UIImage, hashtags: [String], user: User, completion: @escaping (FirestoreCompletion)) {
@@ -114,7 +114,7 @@ struct PostService {
         let group = DispatchGroup()
         
         group.enter()  //この下ではクライアント上で先にカウント+1したlike数をそのまま書き込んでいるが、これはバグの元になるので書き換え必要。
-        COLLECTION_POSTS.document(post.postId).updateData(["likes": post.likes]) { (error) in
+        COLLECTION_POSTS.document(post.postId).updateData(["likes": FieldValue.increment(Int64(+1))]) { (error) in
             if let error = error{ completion(error); return}
             group.leave()
         }
@@ -135,7 +135,7 @@ struct PostService {
         let group = DispatchGroup()
         
         group.enter()  //この下ではクライアント上で先にカウント+1したlike数をそのまま書き込んでいるが、これはバグの元になるので書き換え必要。
-        COLLECTION_POSTS.document(post.postId).updateData(["likes": post.likes]) { (error) in
+        COLLECTION_POSTS.document(post.postId).updateData(["likes": FieldValue.increment(Int64(-1))]) { (error) in
             if let error = error{ completion(error); return}
             group.leave()
         }
@@ -165,24 +165,37 @@ struct PostService {
 //        }
     }
     
+    
+    static var lastPostDoc : DocumentSnapshot?
     //userのfeedコレクションから自分用feed postsを取り出す。---------------------------------------------
-    static func fetchFeedPosts(completion: @escaping (Result<[Post], Error>) -> Void) {
-        guard let uid = Auth.auth().currentUser?.uid else { print("Authエラーです");return }
+    static func fetchFeedPosts(isFirstFetch: Bool, completion: @escaping (Result<[Post], Error>) -> Void) {
+        guard let uid = Auth.auth().currentUser?.uid else {completion(.failure(CustomError.currentUserNil));return }
         var posts = [Post]()
         
-        COLLECTION_USERS.document(uid).collection("user-feed").getDocuments { snapshot, error in
+        var ref: Query
+        if isFirstFetch == true{
+            ref = COLLECTION_USERS.document(uid).collection("user-feed").order(by: "timestamp", descending: true).limit(to: 3)
+        }else{
+            guard let lastDocument = PostService.lastPostDoc else{return}
+            ref = COLLECTION_USERS.document(uid).collection("user-feed").order(by: "timestamp", descending: true).limit(to: 3).start(afterDocument: lastDocument)
+        }
+        
+        ref.getDocuments { snapshot, error in
             if let error = error{
                 completion(.failure(error))
                 return
             }
+            guard let snapshot = snapshot else {completion(.failure(CustomError.snapShotIsNill)); return}
+            print("DLしたスナップショットの数は\(snapshot.documents.count)")
+            PostService.lastPostDoc = snapshot.documents.last
             
             let group = DispatchGroup()
-            snapshot?.documents.forEach({ document in  //ここでsnapshot = nilの時には下のnotifyに行って空のpostsとして処理される。
+            snapshot.documents.forEach({ document in
                 group.enter()
-                fetchPost(withPostId: document.documentID) { (result) in
+                PostService.fetchPost(withPostId: document.documentID) { (result) in
                     switch result{
                     case .failure(let error):
-                        print("DEBUG: Error fetching a single Post \(error)")
+                        print("DEBUG: Error fetching each single Post from posts: \(error)")
                         group.leave()
                     case .success(let post):
                         var postMutable = post    //以下でlikeしたかどうか調べる。
@@ -201,7 +214,7 @@ struct PostService {
                 }
             })
             group.notify(queue: .main) {
-                posts.sort(by: { $0.timestamp.seconds > $1.timestamp.seconds })
+                posts.sort(by: { $0.timestamp.seconds > $1.timestamp.seconds })//もう一度ここで時間整列
                 completion(.success(posts))
             }
         }
