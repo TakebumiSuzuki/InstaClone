@@ -8,44 +8,44 @@
 
 import FirebaseStorage
 
-
-public enum ImageKind{
+enum ImageKind{
     case profileImage
     case feedImage
+    var quality: CGFloat{
+        switch self{
+        case .profileImage: return 0.4
+        case .feedImage: return 0.75
+        }
+    }
+    var path: String{
+        switch self{
+        case .profileImage: return "/profile_images/"
+        case .feedImage: return "/feed_images/"
+        }
+    }
 }
+
 
 struct ImageUploader {
     
-    ///UIImageを引数に、それをjpeg化し、NSUUIDのファイル名でstorageに保存。downloadURLを引数にcompletion。
+    //UIImageをjpeg化。NSUUIDのファイル名でstorageに保存。completionでdownloadURLを返す。
     static func uploadImage(image: UIImage, imageKind: ImageKind, completion: @escaping (Result<String, Error>) -> Void) {
         
-        var quality = 0.0
-        var path = ""
-        switch imageKind{
-        case .profileImage:
-            quality = 0.4
-            path = "/profile_images/"
-        case .feedImage:
-            quality = 0.75
-            path = "/feed_images/"
-        }
-        
-        guard let imageData = image.jpegData(compressionQuality: CGFloat(quality)) else {
+        guard let imageData = image.jpegData(compressionQuality: imageKind.quality) else {
             completion(.failure(CustomError.dataHandling))
             return
         }
+        print(imageKind.quality)
+        print(imageKind.path)
         let filename = NSUUID().uuidString
-        let ref = Storage.storage().reference(withPath: "\(path)\(filename)")  //ファイル名はNSUUID()で作成
+        let ref = Storage.storage().reference(withPath: "\(imageKind.path)\(filename)")  //ファイル名はNSUUID()で作成
         
         ref.putData(imageData, metadata: nil) { metadata, error in
+            if let error = error { completion(.failure(error)); return }
             
-            if let error = error {
-                print("DEBUG: Failed to upload image \(error.localizedDescription)")
-                completion(.failure(error))
-                return
-            }
             ref.downloadURL { (url, error) in   //ここのrefの使い方チェック
-                guard let imageUrl = url?.absoluteString else { return }
+                guard let imageUrl = url?.absoluteString else { completion(.failure(CustomError.uploadedImageUrlNil)); return}
+                
                 completion(.success(imageUrl))
             }
         }

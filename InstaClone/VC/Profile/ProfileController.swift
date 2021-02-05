@@ -21,9 +21,8 @@ class ProfileController: UICollectionViewController {
     
     // MARK: - Properties
     
-    //userはアプリ起動時には自分のuserが入るが、使用中の経路により、他人のuserにもなりうる。また、プロパティが更新されただけでinvokeする。
-    //重要な事はここでpassされているuserはstructであり、元のuser(MainTabControllerのストアプロパティ)とは別に作られたコピーであるという事。
-    //そもそもUserをstructじゃなくてclassで作るべきなのでは?
+    //userはアプリ起動時には自分のuserが入るが、使用中の経路により、他人のuserにもなりうる
+    //userをクラスにしたため、didSetはもはや作動しないので消して良いかと。
     private var user: User {
         didSet {
             collectionView.reloadData()
@@ -53,10 +52,9 @@ class ProfileController: UICollectionViewController {
         
         UserService.fetchUser(withUid: user.uid) { (user) in
             self.navigationItem.title = user.username
-            self.checkIfUserIsFollowed()  //APIアクセスをして自分がuserをフォローしているかを調べてuserオブジェクトを更新(Boolを代入する)
-            self.fetchUserStats()  //APIアクセスをしてuserのstatsオブジェクトを生成して、userオブジェクトに代入する。
-            //以上2つはuserオブジェクトをアップデートするのでどちらもdidSetが呼ばれてreloadData()が実行される
-            self.fetchPosts()  //APIアクセスをしてpost配列をget。このメソッドの最後でreloadData()が実行される
+            self.checkIfUserIsFollowed()  //APIアクセスをして自分がuserをフォローしているかを調べてuserオブジェクトを更新(Boolを代入する)。最後でreloadData()が実行される
+            self.fetchUserStats()  //APIアクセスをしてuserのstatsオブジェクトを生成して、userオブジェクトに代入する。最後でreloadData()が実行される
+            self.fetchPosts()  //APIアクセスをしてpost配列をget。最後でreloadData()が実行される
         }
     }
     deinit {
@@ -104,6 +102,7 @@ class ProfileController: UICollectionViewController {
                 print("DEBUG: Error cheking if user is followed. \(error)")
             case .success(let isFollowed):
                 self.user.isFollowed = isFollowed
+                self.collectionView.reloadData()
             }
         }
     }
@@ -111,6 +110,7 @@ class ProfileController: UICollectionViewController {
     func fetchUserStats() {
         UserService.fetchUserStats(uid: user.uid) { stats in
             self.user.stats = stats   //statsの値が変化していなくてもこのラインがある事によりuserのdidSetは必ず発動される。
+            self.collectionView.reloadData()
         }
     }
     
@@ -191,19 +191,20 @@ extension ProfileController: ProfileHeaderDelegate {
             showEditProfileController()
             
         } else if user.isFollowed {    //すでにフォローしている人のプロフィールを見ている場合→アンフォロー
-            
+            user.isFollowed = false
+            user.stats.followers -= 1
+            profileHeader.configure()  //userはクラスオブジェクトなので一番上のdidSetは機能しなくなっている。代わりにこれでok。
             UserService.unfollow(uid: user.uid) { error in
                 
-                self.user.isFollowed = false  //こうしてisFollowedプロパティが変更されるとuserのdidSetが起動する。
-                self.user.stats.followers -= 1
                 NotificationService.deleteNotification(toUid: user.uid, type: .follow)
             }
             
         } else {     //フォローしていない人の写真を見ている場合→フォロー
+            user.isFollowed = true
+            user.stats.followers += 1
+            profileHeader.configure()
             UserService.follow(uid: user.uid) { error in
                 
-                self.user.isFollowed = true
-                self.user.stats.followers += 1
                 NotificationService.uploadNotification(toUid: user.uid,
                                                        fromUser: currentUser,
                                                        type: .follow)

@@ -35,10 +35,12 @@ class MainTabController: UITabBarController {
     // MARK: - API
     
     func checkIfUserIsLoggedIn() {
+        
         //本来ならこのメソッドはviewDidAppearの段階で実行されるべき。その場合にはDispatchQueue.main.asyncを使う必要がない。
         //viewDidLoad内に置いているのでDispatchQueue.main.asyncが必要。これにより本来のviewDidAppearの段階まで待ってくれるらしい。
         if Auth.auth().currentUser == nil {
             DispatchQueue.main.async {
+                
                 let vc = LoginController()
                 vc.delegate = self
                 let nav = UINavigationController(rootViewController: vc)

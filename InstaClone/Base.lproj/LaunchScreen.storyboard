@@ -19,22 +19,32 @@
                                 <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                             </imageView>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Logo" translatesAutoresizingMaskIntoConstraints="NO" id="QiD-60-SBZ">
-                                <rect key="frame" x="103.5" y="409.5" width="207" height="77"/>
+                                <rect key="frame" x="132" y="454" width="150" height="60"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" secondItem="QiD-60-SBZ" secondAttribute="height" multiplier="62:23" id="Eu0-jx-XDw"/>
+                                    <constraint firstAttribute="height" constant="60" id="L7T-Yk-9fU"/>
+                                    <constraint firstAttribute="width" constant="150" id="RwM-EX-d2Q"/>
+                                </constraints>
+                            </imageView>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="InstagramLogo" translatesAutoresizingMaskIntoConstraints="NO" id="YWd-gu-pDO">
+                                <rect key="frame" x="162" y="358" width="90" height="90"/>
+                                <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="90" id="LhO-TZ-w74"/>
+                                    <constraint firstAttribute="width" constant="90" id="N3K-tt-Ii8"/>
                                 </constraints>
                             </imageView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
-                            <constraint firstItem="QiD-60-SBZ" firstAttribute="width" secondItem="XQ5-Nf-63t" secondAttribute="width" multiplier="0.5" id="8FW-Gj-9ud"/>
-                            <constraint firstItem="QiD-60-SBZ" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="HrQ-O9-qHg"/>
+                            <constraint firstItem="QiD-60-SBZ" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="2Wg-yc-HUZ"/>
                             <constraint firstItem="XQ5-Nf-63t" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="NLw-Ty-zrC"/>
+                            <constraint firstItem="QiD-60-SBZ" firstAttribute="top" secondItem="YWd-gu-pDO" secondAttribute="bottom" constant="6" id="Oy0-hL-exP"/>
                             <constraint firstItem="XQ5-Nf-63t" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" id="Udk-SZ-Uy7"/>
                             <constraint firstAttribute="trailing" secondItem="XQ5-Nf-63t" secondAttribute="trailing" id="Ycp-SV-6Ir"/>
+                            <constraint firstItem="YWd-gu-pDO" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="dFv-6Q-qNv"/>
                             <constraint firstAttribute="bottom" secondItem="XQ5-Nf-63t" secondAttribute="bottom" id="pyh-AN-8uP"/>
-                            <constraint firstItem="QiD-60-SBZ" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="vZe-Qx-h9j"/>
+                            <constraint firstItem="YWd-gu-pDO" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-45" id="zb6-Eh-Vkl"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -44,6 +54,7 @@
         </scene>
     </scenes>
     <resources>
+        <image name="InstagramLogo" width="169.06300354003906" height="169.06300354003906"/>
         <image name="Logo" width="822" height="252"/>
         <image name="splashScreenBackground" width="1000" height="2059"/>
     </resources>

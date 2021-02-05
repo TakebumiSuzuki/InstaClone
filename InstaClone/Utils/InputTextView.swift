@@ -27,7 +27,7 @@ class InputTextView: UITextView {
             if placeholderShouldCenter {  //verticallyに真ん中になるように
                 placeholderLabel.anchor(left: leftAnchor, right: rightAnchor, paddingLeft: 8)
                 placeholderLabel.centerY(inView: self)
-            } else {  //上左からピンする
+            } else {  //左上にピンする
                 placeholderLabel.anchor(top: topAnchor, left: leftAnchor, paddingTop: 6, paddingLeft: 8)
             }
         }
@@ -41,7 +41,7 @@ class InputTextView: UITextView {
         addSubview(placeholderLabel)
         
         //以下はUITextViewオブジェクトが自動ポストするnotification。知らないと書けないコード。textFieldでも同様のものが存在する。
-        //機能的にはUITextViewDelegateのdidChangeと同等。下にあるplacehalderLabel.isHiddenをコントロールする。
+        //機能的にはUITextViewDelegateのdidChangeと同等。文字が入力されるとplaceholderLabelをhiddenする為に使う。
         NotificationCenter.default.addObserver(self, selector: #selector(handleTextDidChange),
                                                name: UITextView.textDidChangeNotification, object: nil)
     }

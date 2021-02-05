@@ -168,7 +168,7 @@ class FeedController: UICollectionViewController {
                 print("DEBUG: Error During Deleting Post. \(error.localizedDescription)")
                 self.showLoader(false)
             case .success(let message):
-                if message == "YES1"{
+                if message == "YES"{
                     self.handleRefresh()
                     self.showLoader(false)
                 }

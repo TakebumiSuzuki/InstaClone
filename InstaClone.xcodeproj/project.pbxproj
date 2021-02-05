@@ -263,11 +263,11 @@
 			children = (
 				0C0C08AB25C09466006C79C5 /* Authentication */,
 				0C0C08A825C09449006C79C5 /* Profile */,
-				0C0C08A925C0944E006C79C5 /* MediaUpload */,
 				0C0C08AA25C09459006C79C5 /* Messaging */,
 				0C0C08C825C094E1006C79C5 /* MainTabController.swift */,
 				0C0C08CB25C094E9006C79C5 /* FeedController.swift */,
 				0C0C08CE25C094F4006C79C5 /* SearchController.swift */,
+				0C0C08B625C0949C006C79C5 /* UploadPostController.swift */,
 				0C0C08B325C0948E006C79C5 /* DummyVC.swift */,
 				0C0C08D125C094FF006C79C5 /* NotificationController.swift */,
 				0C0C08D425C09506006C79C5 /* CommentController.swift */,
@@ -283,14 +283,6 @@
 				0C0C08AC25C09479006C79C5 /* EditProfileController.swift */,
 			);
 			path = Profile;
-			sourceTree = "<group>";
-		};
-		0C0C08A925C0944E006C79C5 /* MediaUpload */ = {
-			isa = PBXGroup;
-			children = (
-				0C0C08B625C0949C006C79C5 /* UploadPostController.swift */,
-			);
-			path = MediaUpload;
 			sourceTree = "<group>";
 		};
 		0C0C08AA25C09459006C79C5 /* Messaging */ = {

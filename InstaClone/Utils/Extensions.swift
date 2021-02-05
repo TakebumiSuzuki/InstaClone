@@ -71,7 +71,6 @@ extension String{
         if let regex = try? NSRegularExpression(pattern: "#[\\p{L}0-9_]*", options: .caseInsensitive){
             
             let string = self as NSString
-            
             return regex.matches(in: self, options: [], range: NSRange(location: 0, length: string.length)).map {
                 string.substring(with: $0.range).replacingOccurrences(of: "#", with: "").lowercased()
             }

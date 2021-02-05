@@ -11,47 +11,63 @@ import Firebase
 
 class PostService {
     
-    //[重要]投稿メソッド。Postモデルと見比べてみる事-------------------------------------------
+    //UploadPostControllerから。--------------------------------------------------------------------------------------
     static func uploadPost(caption: String, image: UIImage, hashtags: [String], user: User, completion: @escaping (FirestoreCompletion)) {
-        guard let uid = Auth.auth().currentUser?.uid else { return }  //Userがあるから必要ないのでは？
         
         ImageUploader.uploadImage(image: image, imageKind: .feedImage) { (result) in  //投稿画像アップロード
             switch result{
             case .failure(let error):
                 completion(error)
             case .success(let imageUrl):
-                let docNewRef = COLLECTION_POSTS.document()
+                let docRef = COLLECTION_POSTS.document()  //ここでパスを作って、documentIDをdataに記入できるようにしている。
                 let timestamp = Timestamp(date: Date())
                 let data = ["caption": caption,
                             "timestamp": timestamp,
                             "likes": 0,
                             "imageUrl": imageUrl,
-                            "ownerUid": uid,
+                            "ownerUid": user.uid,
                             "ownerImageUrl": user.profileImageUrl,
                             "ownerUsername": user.username,
                             "hashtags": hashtags,
-                            "postId": docNewRef.documentID] as [String : Any]
-                docNewRef.setData(data, completion: completion)           //PostオブジェクトをPostコレクションにセーブ
+                            "postId": docRef.documentID] as [String : Any]
+                docRef.setData(data) { (error) in
+                    if let error = error { completion(error); return }  //Postコレクションにdictionaryをセーブ
+                }
                 
-                COLLECTION_FOLLOWERS.document(uid).collection("user-followers").getDocuments {(snapshot, error) in//フォロワーget
-                    if let error = error{
-                        print("Error fetching followers snapshot. \(error.localizedDescription)")
-                        completion(error)
-                    }
-                    snapshot?.documents.forEach({ (document) in
-                        
+                //以下がフォロワーのfeedに書き込む作業。
+                COLLECTION_FOLLOWERS.document(user.uid).collection("user-followers").getDocuments {(snapshot, error) in//フォロワーget
+                    if let error = error{ completion(error); return }
+                    guard let snapshot = snapshot else { completion(CustomError.snapShotIsNill); return }
+                    
+                    let userFeedData = ["timestamp": timestamp, "ownerUid": user.uid, "postId":docRef.documentID] as [String : Any]
+                    
+                    let group = DispatchGroup()
+                    
+                    snapshot.documents.forEach({ (document) in
+                        group.enter()
                         let followerUid = document.documentID         //フォロワーのuser-feedにドキュメント格納。
-                        COLLECTION_USERS.document(followerUid).collection("user-feed").document(docNewRef.documentID)
-                            .setData(["timestamp": timestamp, "ownerUid": uid, "postId":docNewRef.documentID], completion: completion)
+                        COLLECTION_USERS.document(followerUid).collection("user-feed").document(docRef.documentID)
+                            .setData(userFeedData) { (error) in
+                                if let error = error { completion(error); group.leave(); return}
+                                group.leave()
+                            }
                     })
-                    COLLECTION_USERS.document(uid).collection("user-feed").document(docNewRef.documentID)  //自分自身のフィードにも。
-                        .setData(["timestamp": timestamp, "ownerUid": uid, "postId":docNewRef.documentID], completion: completion)
+                    group.enter()
+                    COLLECTION_USERS.document(user.uid).collection("user-feed").document(docRef.documentID)  //自分自身のフィードにも。
+                        .setData(userFeedData) { (error) in
+                            if let error = error { completion(error); group.leave(); return}
+                            group.leave()
+                        }
+                    
+                    group.notify(queue: .main) {
+                        completion(nil)
+                    }
                 }
             }
         }
     }
     
-    //searchControllerより。全ポスト取得。-------------------------------------------------------------------------------
+    //searchControllerから。全ポスト取得。--------------------------------------------------------------------------------------
     static func fetchPosts(completion: @escaping ([Post]) -> Void) {
         COLLECTION_POSTS.order(by: "timestamp", descending: true).getDocuments { (snapshot, error) in
             guard let documents = snapshot?.documents else { return }
@@ -220,40 +236,31 @@ class PostService {
         }
     }
     
-    //FeedControllerから--------------------------------------------------------------------------
+    //FeedControllerから-------------------------------------------------------------------------------------------------
     static func deletePost(_ postId: String, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let uid = Auth.auth().currentUser?.uid else { return }  //一般的な話、completionの記述の後にもreturnは必要。
+        guard let uid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return }
         
         //ポストそのものを消去
         COLLECTION_POSTS.document(postId).delete { (error) in
-            if let error = error{
-                completion(.failure(error))
-                return
-            }
-            completion(.success("Postの消去に成功しました"))
+            if let error = error{ completion(.failure(error)); return }
+            
+            print("Post自体の消去に成功しました")
             
             
             //自分のフィード内の自分のポストの消去
             COLLECTION_USERS.document(uid).collection("user-feed").document(postId).delete{ (error) in
-                if let error = error{
-                    completion(.failure(error))
-                    return
-                }
-                completion(.success("自分のフィード内の自分のポストの消去に成功しました"))
+                if let error = error{ completion(.failure(error)); return }
+                
+                print("自分のuser-feed内の自分のポストの消去に成功しました")
                 
                 
                 //フォロワーの人それぞれのuser-feed
-                Firestore.firestore().collectionGroup("user-feed")
+                Firestore.firestore().collectionGroup("user-feed")  //collectionGroupを使っている。
                     .whereField("postId", isEqualTo: postId).getDocuments { (snapshot, error) in
                         
-                        if let error = error{
-                            completion(.failure(error))
-                            return
-                        }
-                        guard let documents = snapshot?.documents else {
-                            completion(.failure(CustomError.snapShotIsNill))
-                            return
-                        }
+                        if let error = error{ completion(.failure(error)); return }
+                        guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
+                        
                         let group = DispatchGroup()
                         for document in documents{
                             group.enter()
@@ -267,7 +274,8 @@ class PostService {
                             }
                         }
                         group.notify(queue: .main) {
-                            completion(.success("YES1"))
+                            completion(.success("YES"))
+                            print("フォロワーの人のuser-feed内のポストの消去に成功しました")
                         }
                 }
             }
@@ -275,22 +283,15 @@ class PostService {
         
         //Postコレクションの中のサブコレクション(post-likesコレクション)の消去
         COLLECTION_POSTS.document(postId).collection("post-likes").getDocuments { (snapshot, error) in
-            if let error = error{
-                completion(.failure(error))
-                return
-            }
-            guard let documents = snapshot?.documents else {
-                completion(.failure(CustomError.snapShotIsNill))
-                return
-            }
+            if let error = error{ completion(.failure(error)); return }
+            guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
+            
             documents.forEach { $0.reference.delete { (error) in
-                if let error = error {
-                    completion(.failure(error))
-                }
-                return
-            }}
-            completion(.success("YES2"))
+                if let error = error { completion(.failure(error)) }; return }}
+            
+            print("Postのサブコレクション(post-likesコレクション)の消去に成功しました。")
         }
+        
         //後は下にある、notificationと、コメントも。できたら。。
 //        let notificationQuery = COLLECTION_NOTIFICATIONS.document(uid).collection("user-notifications")
 //        notificationQuery.whereField("postId", isEqualTo: postId).getDocuments { snapshot, _ in

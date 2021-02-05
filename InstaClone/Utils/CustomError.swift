@@ -12,15 +12,18 @@ public enum CustomError: Error{
     case dataHandling
     case snapShotIsNill
     case currentUserNil
+    case uploadedImageUrlNil
     
     var localizedDescription: String{
         switch self{
         case .dataHandling:
             return "Data handling error occured in this device"
         case .snapShotIsNill:
-            return "snapShot from Firestore is nill"
+            return "snapShot from Firestore is nil"
         case .currentUserNil:
-            return "currentUser is nill"
+            return "currentUser is nil"
+        case .uploadedImageUrlNil:
+            return "imageUrl of just uploaded picture is nil"
         }
     }
 }
