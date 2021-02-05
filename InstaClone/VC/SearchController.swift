@@ -35,7 +35,7 @@ enum UserFilterConfig: Equatable {  //Equatableがあるとイコールが使え
         case .following: return "Following"
         case .likes: return "Likes"
         case .messages: return "New Messages" //以上4つの場合はsearchBarは表示されないし、する必要がない。
-        case .all: return "Search"  //最初の画面は全ポスト表示。.messagesと.allの場合はuserは全登録者表示。
+        case .all: return "Search Posts & People"  //最初の画面は全ポスト表示。.messagesと.allの場合はuserは全登録者表示。
         }
     }
 }
@@ -54,7 +54,16 @@ class SearchController: UIViewController {
     private var filteredPosts = [Post]()
     
     private let searchController = UISearchController(searchResultsController: nil)
-    private let tableView = UITableView()
+    
+    lazy var tableView: UITableView = {
+        let tb = UITableView()
+        tb.isUserInteractionEnabled = true
+        let tap = UITapGestureRecognizer(target: self, action: #selector(tableViewTouched))
+        tb.addGestureRecognizer(tap)
+        return tb
+    }()
+    
+    
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .vertical
@@ -116,12 +125,10 @@ class SearchController: UIViewController {
     
     func configureUI() {
         view.backgroundColor = .white
-        navigationItem.title = config.navigationItemTitle
-        
+        navigationItem.title = config.navigationItemTitle  //このnavigationItem.titleはnavigationController?.titleよりも優先される。
         tableView.register(UserCell.self, forCellReuseIdentifier: reuseIdentifier)
         tableView.rowHeight = 64
         tableView.dataSource = self
-        tableView.delegate = self
         tableView.tableFooterView = UIView()
         
         view.addSubview(tableView)  //ページを開いた初期画面では、.all以外の時にはtableViewが、.allの時にはcollectionViewが表示される。
@@ -132,6 +139,13 @@ class SearchController: UIViewController {
         view.addSubview(collectionView)
         collectionView.fillSuperview()
     }
+    
+    //MARK: - Actions
+    
+    @objc func tableViewTouched(){
+        searchController.searchBar.resignFirstResponder()
+    }
+    
     
     // MARK: - API
     
@@ -242,7 +256,6 @@ extension SearchController: UISearchResultsUpdating {
 
 extension SearchController: UISearchBarDelegate {
     
-    
     func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
         searchBar.showsCancelButton = true
     }
@@ -251,9 +264,7 @@ extension SearchController: UISearchBarDelegate {
         searchBar.showsCancelButton = false
         searchBar.endEditing(true)
         searchBar.text = nil
-        
         tableView.reloadData()
-        
     }
 }
 
@@ -268,36 +279,14 @@ extension SearchController: UITableViewDataSource {  //searchModeがtrue/false�
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifier, for: indexPath) as! UserCell
-        
+        cell.delegate = self   //profilePicture, name, fullnameをタップした時にprofileControllerを表示させる為。
+        cell.selectionStyle = .none
         let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
         cell.viewModel = UserCellViewModel(user: user)
         
         return cell
     }
 }
-
-// MARK: - UITableViewDelegate
-
-extension SearchController: UITableViewDelegate {
-    
-    //tableViewのcellをタップしたときは、.messageの場合のみチャットスタート、それ以外はProfileControllerがpushされる
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard let uid = Auth.auth().currentUser?.uid else {return}
-        
-        if config == .messages(uid){  //uidは以下では使っていないが、これが正しくないと実行されない。
-            delegate?.controller(self, wantsToStartChatWith: users[indexPath.row])  //ConversationsControllerがdelegate
-        } else {
-            let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
-            if let delegate = delegate{  //tabBar以外からの表示の場合。
-                delegate.controller(self, wantsToShowSelectedUser: user)
-            }else{   //tabBarからの表示の場合
-                let vc = ProfileController(user: user)
-                navigationController?.pushViewController(vc, animated: true)
-            }
-        }
-    }
-}
-
 
 
 // MARK: - UICollectionViewDataSource
@@ -348,3 +337,24 @@ extension SearchController: UICollectionViewDelegate { //.allの時にPostタッ
 }
 
 
+extension SearchController: UserCellDelegate{
+    
+    //tableViewのcellをタップしたときは、.messageの場合のみチャットスタート、それ以外はProfileControllerがpushされる
+    func userCell(_ cell: UserCell, wantsToShowUserProfile user: User) {
+        guard let indexPath = tableView.indexPath(for: cell) else{ return }
+        
+        if config == .messages(user.uid){  //uidは以下では使っていないが、これが正しくないと実行されない。
+            delegate?.controller(self, wantsToStartChatWith: users[indexPath.row])  //ConversationsControllerがdelegate
+        } else {
+            let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
+            if let delegate = delegate{  //tabBar以外からの表示の場合。
+                delegate.controller(self, wantsToShowSelectedUser: user)
+            }else{   //tabBarからの表示の場合
+                let vc = ProfileController(user: user)
+                navigationController?.pushViewController(vc, animated: true)
+            }
+        }
+    }
+    
+    
+}

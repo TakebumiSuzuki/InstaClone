@@ -11,6 +11,7 @@ import UIKit
 
 public protocol ActiveLabelDelegate: class {
     func didSelect(_ text: String, type: ActiveType)
+    func didTapNonActiveArea() //自分で作ったメソッド
 }
 
 public typealias ConfigureLinkAttribute = (ActiveType, [NSAttributedString.Key : Any], Bool) -> ([NSAttributedString.Key : Any])
@@ -206,7 +207,10 @@ typealias ElementTuple = (range: NSRange, element: ActiveElement, type: ActiveTy
                 selectedElement = nil
             }
         case .ended:
-            guard let selectedElement = selectedElement else { return avoidSuperCall }
+//            guard let selectedElement = selectedElement else { return avoidSuperCall }
+            guard let selectedElement = selectedElement else {  //上をコメントアウトして自分で作ったライン
+                delegate?.didTapNonActiveArea()
+                return avoidSuperCall }
             
             switch selectedElement.element {
             case .mention(let userHandle): didTapMention(userHandle)

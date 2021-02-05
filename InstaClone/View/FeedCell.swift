@@ -104,9 +104,7 @@ class FeedCell: UICollectionViewCell {
     lazy var captionLabel: ActiveLabel = {  //ActiveLableについては調べる必要あり
         let label = ActiveLabel()   //viewModel側の設定で、usernameとcaptionを続けて表示するようにしている。
         label.numberOfLines = 2
-//        let tap = UITapGestureRecognizer(target: self, action: #selector(didTapComments))
-//        label.isUserInteractionEnabled = true
-//        label.addGestureRecognizer(tap)
+        label.delegate = self
         return label
     }()
     
@@ -227,8 +225,16 @@ class FeedCell: UICollectionViewCell {
         delegate?.cell(self, wantsToViewLikesFor: viewModel.post.postId)
 
     }
-    
+   
+}
 
+extension FeedCell: ActiveLabelDelegate{
+    func didSelect(_ text: String, type: ActiveType) {
+    }
+    
+    func didTapNonActiveArea() {  //activeLabelソースコード内を修正して加えたdelegateMethod。コメントボタンを押した時と同じ動作に。
+        didTapComments()
+    }
     
     
 }

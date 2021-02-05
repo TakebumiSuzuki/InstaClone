@@ -16,7 +16,8 @@ struct UserService {
     static func fetchUser(withUid uid: String, completion: @escaping (User) -> Void) {
         
         COLLECTION_USERS.document(uid).getDocument { snapshot, error in
-            guard let dictionary = snapshot?.data() else { return }  //errorの時もここでreturnとなる。
+            guard let dictionary = snapshot?.data() else { return }  //errorの時もここで一緒にreturnとなる。
+            
             let user = User(dictionary: dictionary)
             completion(user)
         }
@@ -78,7 +79,7 @@ struct UserService {
             }
         }
     }
-    //FeedController、NotificationControllerから。完全な分岐追跡とエラーハンドリングができている---------------------------------------------
+    //FeedController、NotificationControllerから。完全な分岐追跡とエラーハンドリングができている----------------------------------------------
     static func follow(uid: String, completion: @escaping (Result<String, Error>) -> Void) {
         guard let currentUid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return}
         
@@ -110,7 +111,7 @@ struct UserService {
             }
     }
     
-    //FeedController、NotificationControllerから。完全な分岐追跡とエラーハンドリングができている-------------------------------------------
+    //FeedController、NotificationControllerから。完全な分岐追跡とエラーハンドリングができている----------------------------------------------
     static func unfollow(uid: String, completion: @escaping (Result<String, Error>) -> Void) {
         guard let currentUid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return}
         

@@ -13,17 +13,15 @@ import SafariServices
 private let reuseIdentifier = "Cell"
 
 
-//少し複雑になっているのは、このVCを単体のポストfeedページにも共用しているから。
 class FeedController: UICollectionViewController {
     
     // MARK: - Lifecycle
-    private var postService = PostService()
-    private var posts = [Post]()
-//    {   //通常のfeed画面にはこちらの変数を使う
+    private var posts = [Post]()  //通常のfeed画面にはこちらの変数を使う
+//    {
 //        didSet { collectionView.reloadData() }
 //    }
     
-    var post: Post? {    //単体のポストを表示する場合にはこちらの変数を使う。上のpostsを使う場合にはここはnilのままになる。
+    var post: Post? {    //単体のポストを表示する場合にはこちらの変数を使う。ここがnilの時には上のpostsを使う。
         didSet { collectionView.reloadData() }
     }
     
@@ -35,6 +33,7 @@ class FeedController: UICollectionViewController {
         configureUI()
         if post == nil{
             fetchPosts(isFirstFetch: true)  //マルチポストモード
+            //このページを通して３箇所からfetchPostsが呼ばれる。ここのviewDidLoadとrefresherからはtrueで。paginationの場合はfalseで。
         }else{
             checkSinglePostLiked()  //単体ポストモード
         }
@@ -51,7 +50,7 @@ class FeedController: UICollectionViewController {
         
         navigationItem.title = "Feed"
         
-        if post == nil {  //単体ポストでない場合、つまり通常のfeed画面の場合は左右上にログアウトとメッセージへのリンクが付く
+        if post == nil {  //通常のfeed画面の場合は左右上にログアウトとメッセージへのリンクが付く
             navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Logout", style: .plain, target: self,
                                                                action: #selector(handleLogout))
             navigationItem.rightBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "send2"), style: .plain, target: self,
@@ -93,7 +92,7 @@ class FeedController: UICollectionViewController {
     
     @objc func handleRefresh() {
         if post == nil {  //マルチポストモード
-            PostService.lastPostDoc = nil
+            PostService.lastPostDoc = nil  //refreshの際にはpaginationの付境界設定をリセットし、新規のロードを行う
             fetchPosts(isFirstFetch: true)
         }else{            //単体ポストモード
             updatePost()
@@ -110,12 +109,12 @@ class FeedController: UICollectionViewController {
             
             switch result{
             case .failure(let error):
-                self.collectionView.refreshControl?.endRefreshing()
+                self.refresher.endRefreshing()
                 print("DEBUG: Failed to fetch posts \(error)")
-                self.showSimpleAlert(title: "Server error..Failed to download feed posts.", message: "", actionTitle: "ok")
+                self.showSimpleAlert(title: "Failed to download feed.Try again later.", message: "", actionTitle: "ok")
                 
             case .success(let posts):
-                self.collectionView.refreshControl?.endRefreshing()
+                self.refresher.endRefreshing()
                 if isFirstFetch{
                     self.posts = []
                 }
@@ -130,30 +129,41 @@ class FeedController: UICollectionViewController {
         }
     }
     
-    func checkSinglePostLiked() {     //viewDidLoadから呼ばれる。
+    func checkSinglePostLiked() {     //単体ポストの場合、viewDidLoadから呼ばれる。
         guard let post = post else { return }
         
-        PostService.checkIfUserLikedPost(post: post) { didLike in //errorの場合はデフォルトのfalseのままになる。
-            self.post?.didLike = didLike
-            self.collectionView.reloadData()
+        PostService.checkIfUserLikedPost(post: post) { (result) in
+            switch result{
+            case .failure(let error):
+                print("DEBUG: error checkingIfUserLikePost: \(error.localizedDescription)")
+            case .success(let didLike):
+                self.post?.didLike = didLike
+                self.collectionView.reloadData()
+            }
         }
     }
     
-    func updatePost(){    //refresherから呼ばれる。
+    func updatePost(){    //単体ポストの場合、refresherから呼ばれる。
         guard let post = post else { refresher.endRefreshing(); return }
         
-        PostService.fetchPost(withPostId: post.postId) { (result) in
+        PostService.fetchPost(withPostId: post.postId) { (result) in    //postIdを使って新しいpostをダウンロードする。
             switch result{
             case .failure(let error):
-                print("DEBUG Error fetching single post \(error.localizedDescription)")  //この場合にはalertを表示させる必要ないかと。
                 self.refresher.endRefreshing()
-                
+                print("DEBUG Error fetching single post \(error.localizedDescription)")  //この場合にはalertを表示させる必要ないかと。
+            
             case .success(let updatedPost):
                 self.post = updatedPost
-                PostService.checkIfUserLikedPost(post: post) { didLike in  //とりあえずここはエラーハンドリングなしで。
-                    self.post?.didLike = didLike
-                    self.refresher.endRefreshing()
-                    self.collectionView.reloadData()
+                PostService.checkIfUserLikedPost(post: post) { (result) in
+                    switch result{
+                    case .failure(let error):
+                        self.refresher.endRefreshing()
+                        print("DEBUG: error checkingIfUserLikePost: \(error.localizedDescription)")
+                    case .success(let didLike):
+                        self.refresher.endRefreshing() 
+                        self.post?.didLike = didLike
+                        self.collectionView.reloadData()
+                    }
                 }
             }
         }
@@ -165,8 +175,8 @@ class FeedController: UICollectionViewController {
         PostService.deletePost(post.postId) { (result) in
             switch result{
             case .failure(let error):
-                print("DEBUG: Error During Deleting Post. \(error.localizedDescription)")
                 self.showLoader(false)
+                print("DEBUG: Error During Deleting Post. \(error.localizedDescription)")
             case .success(let message):
                 if message == "YES"{
                     self.handleRefresh()
@@ -175,68 +185,9 @@ class FeedController: UICollectionViewController {
             }
         }
     }
-    
 }
 
 
-// MARK: - UICollectionViewDataSource
-
-extension FeedController {
-    
-    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return post == nil ? posts.count : 1
-    }
-    
-    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! FeedCell
-        cell.delegate = self
-        
-        handleHashtagTapped(forCell: cell)
-        handleMentionTapped(forCell: cell)
-        handleURLTapped(forCell: cell)
-        //このページ一番下のメソッド。各cell内のcaptionLabelにhashtag、mentionをタップした時の動作をattachする。hashtagをタップすると
-        //HashtagPostControllerがpushされる。このタイミングで(cell上ではなくこのFeedController上で)この作業をする事により、delegateを作る手間を省ける。
-        
-        if let post = post {  //単体ポストの場合
-            cell.viewModel = PostViewModel(post: post)
-        } else {
-            cell.viewModel = PostViewModel(post: posts[indexPath.row])
-        }
-        return cell
-    }
-}
-
-// MARK: - UICollectionViewDelegateFlowLayout
-
-extension FeedController: UICollectionViewDelegateFlowLayout {
-    
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        
-        let width = view.frame.width
-        var height = width + 8 + 40 + 8
-        height += 50
-        height += 60
-        
-        return CGSize(width: width, height: height)
-    }
-}
-
-
-//MARK: - UICollectionViewDelegate
-
-extension FeedController{
-    
-    override func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
-        
-        if collectionView.contentOffset.y + view.frame.size.height - 100 > collectionView.contentSize.height{
-            fetchPosts(isFirstFetch: false)
-        }
-        
-    }
-    
-    
-}
 
 // MARK: - FeedCellDelegate
 
@@ -244,12 +195,12 @@ extension FeedController: FeedCellDelegate {
     
     //プロフィール表示。
     func cell(_ cell: FeedCell, wantsToShowProfileFor uid: String) {
-        
         UserService.fetchUser(withUid: uid) { user in  //エラーの時は途中でreturnされ何も起きないだけなので特にハンドリングの必要はない。
             let vc = ProfileController(user: user)
             self.navigationController?.pushViewController(vc, animated: true)
         }
     }
+    
     
     //オプションボタン。自分のポストか他人のポストかによって表示を変えている
     func cell(_ cell: FeedCell, wantsToShowOptionsForPost post: Post) {
@@ -265,6 +216,7 @@ extension FeedController: FeedCellDelegate {
         }
         let unfollowAction = UIAlertAction(title: "Unfollow \(post.ownerUsername)?", style: .default) { _ in
             self.showLoader(true)
+            
             UserService.unfollow(uid: post.ownerUid) { (result) in
                 switch result{
                 case .failure(let error):
@@ -281,6 +233,7 @@ extension FeedController: FeedCellDelegate {
         
         let followAction = UIAlertAction(title: "Follow \(post.ownerUsername)?", style: .default) { _ in
             self.showLoader(true)
+            
             UserService.follow(uid: post.ownerUid) { (result) in
                 switch result{
                 case .failure(let error):
@@ -396,7 +349,7 @@ extension FeedController: FeedCellDelegate {
 
     func cell(_ cell: FeedCell, wantsToViewLikesFor postId: String) {
         let vc = SearchController(config: .likes(postId))
-        vc.delegate = self
+        vc.delegate = self    //一番下にあるdelegateMethod参照。likeしている人をタップした時に、その人のprofileページpushする。
         let nav = UINavigationController(rootViewController: vc)
         present(nav, animated: true, completion: nil)
     }
@@ -406,8 +359,65 @@ extension FeedController: FeedCellDelegate {
         let vc = UIActivityViewController(activityItems: [image, caption], applicationActivities: nil)
         present(vc, animated: true, completion: nil)
     }
-        
     
+}
+
+
+// MARK: - UICollectionViewDataSource
+
+extension FeedController {
+    
+    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return post == nil ? posts.count : 1
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! FeedCell
+        cell.delegate = self
+        
+        handleHashtagTapped(forCell: cell)
+        handleMentionTapped(forCell: cell)
+        handleURLTapped(forCell: cell)
+        //このページ一番下のメソッド。各cell内のcaptionLabelにhashtag、mentionをタップした時の動作をattachする。hashtagをタップすると
+        //HashtagPostControllerがpushされる。このタイミングで(cell上ではなくこのFeedController上で)この作業をする事により、delegateを作る手間を省ける。
+        
+        if let post = post {  //単体ポストの場合
+            cell.viewModel = PostViewModel(post: post)
+        } else {
+            cell.viewModel = PostViewModel(post: posts[indexPath.row])
+        }
+        return cell
+    }
+}
+
+// MARK: - UICollectionViewDelegateFlowLayout
+
+extension FeedController: UICollectionViewDelegateFlowLayout {
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        
+        let width = view.frame.width
+        var height = width + 8 + 40 + 8
+        height += 50
+        height += 60
+        
+        return CGSize(width: width, height: height)
+    }
+}
+
+
+//MARK: - UICollectionViewDelegate
+
+extension FeedController{    //pagination(下に引っ張った時の挙動)
+    
+    override func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+        guard post == nil else{ return }    //単体ポストの場合はreturnされpagination手続きは実行されない。
+        
+        if collectionView.contentOffset.y + view.frame.size.height - 100 > collectionView.contentSize.height{
+            fetchPosts(isFirstFetch: false)
+        }
+    }
 }
 
 
@@ -451,7 +461,8 @@ extension FeedController {
     }
 }
 
-extension FeedController: SearchControllerDelegate{
+
+extension FeedController: SearchControllerDelegate{  //likeした人の一覧を表示した時に、そこからProfileControllerをpushする為に呼ばれる。
     
     func controller(_ controller: SearchController, wantsToStartChatWith user: User) {
     }

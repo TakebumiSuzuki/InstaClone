@@ -96,13 +96,9 @@ class PostService {
     static func fetchPost(withPostId postId: String, completion: @escaping (Result<(Post), Error>) -> Void) {
         
         COLLECTION_POSTS.document(postId).getDocument { snapshot, error in
-            if let error = error{
-                completion(.failure(error))
-            }
-            guard let data = snapshot?.data() else {
-                completion(.failure(CustomError.dataHandling))
-                return
-            }
+            if let error = error{ completion(.failure(error)); return }
+            guard let data = snapshot?.data() else { completion(.failure(CustomError.dataHandling)); return }
+            
             let post = Post(dictionary: data)
             completion(.success(post))
         }
@@ -164,21 +160,16 @@ class PostService {
         group.notify(queue: .main) { completion(nil) }
     }
     
-    //FeelControllerから。----------------------------------------------------------------------------
-    static func checkIfUserLikedPost(post: Post, completion: @escaping (Bool) -> Void) {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+    //FeelControllerから。------------------------------------------------------------------------------------------------------
+    static func checkIfUserLikedPost(post: Post, completion: @escaping (Result<Bool, Error>) -> Void) {
+        guard let uid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return }
         
         COLLECTION_POSTS.document(post.postId).collection("post-likes").document(uid).getDocument { (snapshot, error) in
-            guard let didLike = snapshot?.exists else { return }
-            completion(didLike)
+            if let error = error { completion(.failure(error)); return}
+            guard let didLike = snapshot?.exists else { completion(.failure(CustomError.snapShotIsNill)); return }
+            
+            completion(.success(didLike))
         }
-        
-        
-        //user-likesの中に個別のからのpostIDを作るのは一見コストがかかるように見えるがexistsを使う限り無料なのでむしろ効率的かと
-//        COLLECTION_USERS.document(uid).collection("user-likes").document(post.postId).getDocument { (snapshot, _) in
-//            guard let didLike = snapshot?.exists else { return }
-//            completion(didLike)
-//        }
     }
     
     
@@ -274,7 +265,7 @@ class PostService {
                             }
                         }
                         group.notify(queue: .main) {
-                            completion(.success("YES"))
+                            completion(.success("YES"))     //successが送られるのはここからだけ
                             print("フォロワーの人のuser-feed内のポストの消去に成功しました")
                         }
                 }
