@@ -49,38 +49,43 @@ class MessagingService {
     static func uploadMessage(_ message: String, to user: User, completion: @escaping(Error?) -> Void) {
         
         guard let currentUid = Auth.auth().currentUser?.uid else { return }
-        UserService.fetchUser(withUid: currentUid) { (currentUser) in
-            
-            let documentID = user.uid > currentUser.uid ? "\(user.uid)_\(currentUser.uid)" : "\(currentUser.uid)_\(user.uid)"
-            let chatPartners: [String] = user.uid > currentUser.uid ? [user.uid, currentUser.uid] : [currentUser.uid, user.uid]
-            
-            let docRef = COLLECTION_MESSAGES.document(documentID).collection("messages").document()
-            
-            let messageData = ["text": message,
-                               "timestamp": Timestamp(date: Date()),
-                               "messageId": docRef.documentID,
-                               "chatPartners": chatPartners,
-                               
-                               "toId": user.uid,
-                               "toUsername": user.username,  //相手の名前
-                               "toProfileImageUrl": user.profileImageUrl,  //相手のImageUrl
-                               
-                               "fromId": currentUid,
-                               "fromUsername": currentUser.username,
-                               "fromProfileImageUrl": currentUser.profileImageUrl] as [String : Any]
-            
-            docRef.setData(messageData) { (error) in
-                if let error = error{
-                    completion(error)
+        UserService.fetchUser(withUid: currentUid) { (result) in
+            switch result{
+            case .failure(let error):
+                completion(error)
+                
+            case .success(let currentUser):
+                let documentID = user.uid > currentUser.uid ? "\(user.uid)_\(currentUser.uid)" : "\(currentUser.uid)_\(user.uid)"
+                let chatPartners: [String] = user.uid > currentUser.uid ? [user.uid, currentUser.uid] : [currentUser.uid, user.uid]
+                
+                let docRef = COLLECTION_MESSAGES.document(documentID).collection("messages").document()
+                
+                let messageData = ["text": message,
+                                   "timestamp": Timestamp(date: Date()),
+                                   "messageId": docRef.documentID,
+                                   "chatPartners": chatPartners,
+                                   
+                                   "toId": user.uid,
+                                   "toUsername": user.username,  //相手の名前
+                                   "toProfileImageUrl": user.profileImageUrl,  //相手のImageUrl
+                                   
+                                   "fromId": currentUid,
+                                   "fromUsername": currentUser.username,
+                                   "fromProfileImageUrl": currentUser.profileImageUrl] as [String : Any]
+                
+                docRef.setData(messageData) { (error) in
+                    if let error = error{
+                        completion(error)
+                    }
+                    completion(nil)
                 }
-                completion(nil)
-            }
-            
-            COLLECTION_MESSAGES.document(documentID).setData(messageData) { (error) in
-                if let error = error{
-                    completion(error)
+                
+                COLLECTION_MESSAGES.document(documentID).setData(messageData) { (error) in
+                    if let error = error{
+                        completion(error)
+                    }
+                    completion(nil)
                 }
-                completion(nil)
             }
         }
     }

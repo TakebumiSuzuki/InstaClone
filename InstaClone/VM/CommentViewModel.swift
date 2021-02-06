@@ -17,13 +17,9 @@ struct CommentViewModel {
     var profileImageUrl: URL? { return URL(string: comment.profileImageUrl) }
     
     var timeStamp: String {
-        let formatter = DateComponentsFormatter()  //メモリ節約のためこれはグローバル変数またはstaticにするべきでは？
-        formatter.allowedUnits = [.second, .minute, .hour, .day, .weekOfMonth]
-        formatter.maximumUnitCount = 1
-        formatter.unitsStyle = .brief
-        return formatter.string(from: comment.timestamp.dateValue(), to: Date())!
+        let time = TimestampService.getStringDate(timeStamp: comment.timestamp) ?? ""
+        return time
     }
-    
     
     func commentLabelText() -> NSAttributedString {
         let attributedString = NSMutableAttributedString(string: "\(comment.username)  ", attributes: [.font: UIFont.boldSystemFont(ofSize: 14)])

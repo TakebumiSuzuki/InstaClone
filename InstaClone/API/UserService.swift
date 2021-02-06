@@ -12,14 +12,15 @@ typealias FirestoreCompletion = (Error?) -> Void
 
 struct UserService {
     
-    //profileController、feedController、notificationControllerから。エラーハンドリングは特に必要ないかと。-------------------------
-    static func fetchUser(withUid uid: String, completion: @escaping (User) -> Void) {
+    //profileController、feedController、notificationControllerから。-------------------------------------------------
+    static func fetchUser(withUid uid: String, completion: @escaping (Result<User, Error>) -> Void) {
         
         COLLECTION_USERS.document(uid).getDocument { snapshot, error in
-            guard let dictionary = snapshot?.data() else { return }  //errorの時もここで一緒にreturnとなる。
+            if let error = error{ completion(.failure(error)); return }
+            guard let dictionary = snapshot?.data() else { completion(.failure(CustomError.snapShotIsNill)); return }
             
             let user = User(dictionary: dictionary)
-            completion(user)
+            completion(.success(user))
         }
     }
     
@@ -37,45 +38,65 @@ struct UserService {
     }
     
     ///指定されたコレクションの中に保存されている全てのuserのドキュメントID(UID)から[User]を作る
-    private static func fetchUsers(fromCollection collection: CollectionReference, completion: @escaping([User]) -> Void) {
+    private static func fetchUsers(fromCollection collection: CollectionReference, completion: @escaping(Result<[User], Error>) -> Void) {
         
         var users = [User]()
         collection.getDocuments { snapshot, _ in
-            guard let documents = snapshot?.documents else { return }
-            documents.forEach({ fetchUser(withUid: $0.documentID) { user in
-                users.append(user)
-                completion(users)
+            guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
+            let group = DispatchGroup()
+            
+            documents.forEach({
+                group.enter()
+                fetchUser(withUid: $0.documentID) { (result) in
+                    switch result{
+                    case .failure(let error):
+                        completion(.failure(error))
+                        group.leave()
+                    case .success(let user):
+                        users.append(user)
+                        group.leave()
+                    }
             } })
+            group.notify(queue: .main) {
+                completion(.success(users))
+            }
         }
     }
     
     
     //指定されたconfigEnumに従い条件分岐して[User]を返す----------------------------------------------------------------
-    static func fetchUsers(forConfig config: UserFilterConfig, completion: @escaping ([User]) -> Void) {
-        
+    static func fetchUsers(forConfig config: UserFilterConfig, completion: @escaping (Result<[User], Error>) -> Void) {
+        var ref: CollectionReference?
         switch config {
-        case .followers(let uid):
-            let ref = COLLECTION_FOLLOWERS.document(uid).collection("user-followers")
-            fetchUsers(fromCollection: ref, completion: completion)
-            
-        case .following(let uid):
-            let ref = COLLECTION_FOLLOWING.document(uid).collection("user-following")
-            fetchUsers(fromCollection: ref, completion: completion)
-            
-        case .likes(let postId):
-            let ref = COLLECTION_POSTS.document(postId).collection("post-likes")
-            fetchUsers(fromCollection: ref, completion: completion)
-        
-        case .messages(let uid):
-            let ref = COLLECTION_FOLLOWING.document(uid).collection("user-following")
-            fetchUsers(fromCollection: ref, completion: completion)
-            
         case .all:  //全ユーザー取得。
+            ref = nil
             COLLECTION_USERS.getDocuments { (snapshot, error) in
-                guard let snapshot = snapshot else { return }
+                guard let snapshot = snapshot else { completion(.failure(CustomError.snapShotIsNill)); return }
                 
                 let users = snapshot.documents.map({ User(dictionary: $0.data()) })
-                completion(users)
+                completion(.success(users))
+                return
+            }
+        case .followers(let uid):
+            ref = COLLECTION_FOLLOWERS.document(uid).collection("user-followers")
+            
+        case .following(let uid):
+            ref = COLLECTION_FOLLOWING.document(uid).collection("user-following")
+            
+        case .likes(let postId):
+            ref = COLLECTION_POSTS.document(postId).collection("post-likes")
+        
+        case .messages(let uid):
+            ref = COLLECTION_FOLLOWING.document(uid).collection("user-following")
+        }
+        
+        guard let reference = ref else { return }
+        fetchUsers(fromCollection: reference) { (result) in
+            switch result{
+            case .failure(let error):
+                completion(.failure(error))
+            case .success(let users):
+                completion(.success(users))
             }
         }
     }

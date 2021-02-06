@@ -115,9 +115,15 @@ extension ConversationsController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         showLoader(true)
         
-        UserService.fetchUser(withUid: messages[indexPath.row].chatPartnerId) { user in
-            self.showLoader(false)
-            self.showChatController(forUser: user)
+        UserService.fetchUser(withUid: messages[indexPath.row].chatPartnerId) { (result) in
+            switch result{
+            case .failure(let error):
+                print("Error fetching User: \(error.localizedDescription)")
+                
+            case .success(let user):
+                self.showLoader(false)
+                self.showChatController(forUser: user)
+            }
         }
     }
     

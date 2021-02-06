@@ -19,7 +19,6 @@ protocol SearchControllerDelegate: class {
 }
 
 
-
 //このUserFilterConfigはinitの際に同時に代入される。
 enum UserFilterConfig: Equatable {  //Equatableがあるとイコールが使える。条件分岐で使えるという事。
     
@@ -52,6 +51,8 @@ class SearchController: UIViewController {
     private var filteredUsers = [User]()
     private var posts = [Post]()  //tabをタップしての直接表示の初期画面のみで使われる
     private var filteredPosts = [Post]()
+    private let refresherTV = UIRefreshControl()
+    private let refresherCV = UIRefreshControl()
     
     private let searchController = UISearchController(searchResultsController: nil)
     
@@ -60,6 +61,9 @@ class SearchController: UIViewController {
         tb.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(tableViewTouched))
         tb.addGestureRecognizer(tap)
+        
+        refresherTV.addTarget(self, action: #selector(refreshTableView), for: .valueChanged)
+        tb.refreshControl = refresherTV
         return tb
     }()
     
@@ -73,6 +77,9 @@ class SearchController: UIViewController {
         cv.alwaysBounceVertical = true
         cv.backgroundColor = .white
         cv.register(ProfileCell.self, forCellWithReuseIdentifier: postCellIdentifier)
+        
+        refresherCV.addTarget(self, action: #selector(refreshCollectionView), for: .valueChanged)
+        cv.refreshControl = refresherCV
         return cv
     }()
     
@@ -146,21 +153,45 @@ class SearchController: UIViewController {
         searchController.searchBar.resignFirstResponder()
     }
     
+    @objc func refreshTableView(){
+        fetchUsers()
+    }
+    
+    @objc func refreshCollectionView(){
+        fetchPosts()
+    }
+    
     
     // MARK: - API
     
     func fetchUsers() {   //configによって内容は変わるが、全てのcaseでそれぞれ違う種類の[User]が返される。
         
-        UserService.fetchUsers(forConfig: config) { users in  //エラー時はreturnされるので特にハンドリングする必要ないのでは。。
-            self.users = users
-            self.tableView.reloadData()
+        UserService.fetchUsers(forConfig: config) { (result) in
+            switch result{
+            case .failure(let error):
+                self.refresherTV.endRefreshing()
+                print("DEBUG: Error fetch users for tableView: \(error.localizedDescription)")
+            case .success(let users):
+                self.refresherTV.endRefreshing()
+                self.users = users
+                self.tableView.reloadData()
+            
+            }
         }
     }
     
     func fetchPosts() {   //.allの時のみこれが起動。全ユーザーからの全投稿を時系列で取り出し表示する
-        PostService.fetchPosts { posts in
-            self.posts = posts
-            self.collectionView.reloadData()
+        PostService.fetchPosts { result in
+            switch result{
+            case .failure(let error):
+                self.refresherCV.endRefreshing()
+                print("DEBUG: Error fetching all posts: \(error.localizedDescription)")
+                self.showSimpleAlert(title: "Couln't download post.Try again later.", message: "", actionTitle: "ok")
+            case .success(let posts):
+                self.refresherCV.endRefreshing()
+                self.posts = posts
+                self.collectionView.reloadData()
+            }
         }
     }
 }
@@ -280,7 +311,7 @@ extension SearchController: UITableViewDataSource {  //searchModeがtrue/false�
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifier, for: indexPath) as! UserCell
         cell.delegate = self   //profilePicture, name, fullnameをタップした時にprofileControllerを表示させる為。
-        cell.selectionStyle = .none
+//        cell.selectionStyle = .none //なくても良いよう。
         let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
         cell.viewModel = UserCellViewModel(user: user)
         

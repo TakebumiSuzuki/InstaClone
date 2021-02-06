@@ -50,13 +50,20 @@ class ProfileController: UICollectionViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(true)
         
-        UserService.fetchUser(withUid: user.uid) { (user) in
-            self.navigationItem.title = user.username
-            self.checkIfUserIsFollowed()  //APIアクセスをして自分がuserをフォローしているかを調べてuserオブジェクトを更新(Boolを代入する)。最後でreloadData()が実行される
-            self.fetchUserStats()  //APIアクセスをしてuserのstatsオブジェクトを生成して、userオブジェクトに代入する。最後でreloadData()が実行される
-            self.fetchPosts()  //APIアクセスをしてpost配列をget。最後でreloadData()が実行される
+        UserService.fetchUser(withUid: user.uid) { (result) in
+            switch result{
+            case .failure(let error):
+                print("DEBUG: Error fetching User: \(error.localizedDescription)")
+                
+            case .success(let user):
+                self.navigationItem.title = user.username
+                self.checkIfUserIsFollowed()  //APIアクセスをして自分がuserをフォローしているかを調べてuserオブジェクトを更新(Boolを代入する)。最後でreloadData()が実行される
+                self.fetchUserStats()  //APIアクセスをしてuserのstatsオブジェクトを生成して、userオブジェクトに代入する。最後でreloadData()が実行される
+                self.fetchPosts()  //APIアクセスをしてpost配列をget。最後でreloadData()が実行される
+            }
         }
-    }
+   }
+    
     deinit {
         print("profilecontroller deinited------------------------------------------------")
     }

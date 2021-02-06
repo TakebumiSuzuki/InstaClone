@@ -7,7 +7,7 @@
 
 import UIKit
 
-protocol CommentCellDelegate{    //profileImageタップした時にプロフィール画面が出るように。
+protocol CommentCellDelegate: class{    //profileImageタップした時にプロフィール画面が出るように。
     func cell(_ cell: UICollectionViewCell, showUserProfileFor uid: String)
 }
 
@@ -20,7 +20,7 @@ class CommentCell: UICollectionViewCell {
         didSet { configure() }
     }
     
-    var delegate: CommentCellDelegate?
+    weak var delegate: CommentCellDelegate?
     
     lazy var profileImageView: UIImageView = {
         let iv = UIImageView()
@@ -59,15 +59,13 @@ class CommentCell: UICollectionViewCell {
         
         addSubview(timeLabel)  //こちらのconstraintをcommentLabelより先に設定しないとエラーが出る。
         timeLabel.centerY(inView: self)
-        timeLabel.anchor(right: self.rightAnchor,  paddingRight: 14)
+        timeLabel.anchor(right: rightAnchor,  paddingRight: 14)
         
         addSubview(commentLabel)
         commentLabel.centerY(inView: profileImageView,
                              leftAnchor: profileImageView.rightAnchor,
                              paddingLeft: 12)
         commentLabel.anchor(right: timeLabel.leftAnchor, paddingRight: 8)
-        
-        
     }
     
     required init?(coder: NSCoder) {

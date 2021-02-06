@@ -38,7 +38,7 @@ class CustomInputAccesoryView: UIView {
     
     private let config: InputViewConfiguration
             
-    private lazy var commentTextView: InputTextView = {
+    lazy var commentTextView: InputTextView = {
         let tv = InputTextView()
         tv.placeholderText = config.placeholderText
         tv.font = UIFont.systemFont(ofSize: 15)
@@ -78,7 +78,6 @@ class CustomInputAccesoryView: UIView {
         divider.backgroundColor = .lightGray
         addSubview(divider)
         divider.anchor(top: topAnchor, left: leftAnchor, right: rightAnchor, height: 0.5)
-        
     }
     
     required init?(coder: NSCoder) {

@@ -52,9 +52,14 @@ class MainTabController: UITabBarController {
     
     func fetchUser() {
         guard let uid = Auth.auth().currentUser?.uid else { return }
-        UserService.fetchUser(withUid: uid) { user in
-            self.user = user
-        }
+        UserService.fetchUser(withUid: uid) { (result) in
+            switch result{
+            case .failure(let error):
+                print("DEBUG: Error fetching User: \(error.localizedDescription)")
+            case .success(let user):
+                self.user = user
+            }
+       }
     }
     
     

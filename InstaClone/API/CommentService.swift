@@ -10,22 +10,23 @@ import Firebase
 
 class CommentService {
     
-    var commentListener: ListenerRegistration!
     
-    //FirestoreCompletionを使っておけば、errorはそのまま勝手に伝えてくれる。
+    //FirestoreCompletionは(Error?) -> Voidの事。
     static func uploadComment(comment: String, post: Post, user: User, completion: @escaping (FirestoreCompletion)) {
 
         let data: [String: Any] = ["uid": user.uid,
                                    "comment": comment,
-                                   "timestamp": Timestamp(date: Date()),
                                    "username": user.username,
                                    "profileImageUrl": user.profileImageUrl,
+                                   "timestamp": Timestamp(date: Date()),
                                    "postOwnerUid": post.ownerUid]
         
         COLLECTION_POSTS.document(post.postId).collection("comments").addDocument(data: data, completion: completion)
     }
     
     
+    
+    var commentListener: ListenerRegistration!
     
     func fetchComments(forPost postID: String, completion: @escaping ([Comment]) -> Void) {
         
@@ -34,7 +35,7 @@ class CommentService {
             .order(by: "timestamp", descending: true)
         
         commentListener = query.addSnapshotListener { (snapshot, error) in
-            
+            print("Listener listening")
             if let error = error{
                 print("DEBUG: Error during snapshotListening...\(error.localizedDescription)")
                 return

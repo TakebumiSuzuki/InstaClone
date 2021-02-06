@@ -120,9 +120,15 @@ extension NotificationsController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        UserService.fetchUser(withUid: notifications[indexPath.row].uid) { user in
-            let vc = ProfileController(user: user)
-            self.navigationController?.pushViewController(vc, animated: true)
+        UserService.fetchUser(withUid: notifications[indexPath.row].uid) { (result) in
+            switch result{
+            case .failure(let error):
+                print("DEBUG: Error fetching User: \(error.localizedDescription)")
+                
+            case .success(let user):
+                let vc = ProfileController(user: user)
+                self.navigationController?.pushViewController(vc, animated: true)
+            }
         }
     }
 }

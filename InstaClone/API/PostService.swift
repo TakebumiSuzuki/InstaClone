@@ -68,12 +68,12 @@ class PostService {
     }
     
     //searchControllerから。全ポスト取得。--------------------------------------------------------------------------------------
-    static func fetchPosts(completion: @escaping ([Post]) -> Void) {
+    static func fetchPosts(completion: @escaping (Result<[Post], Error>) -> Void) {
         COLLECTION_POSTS.order(by: "timestamp", descending: true).getDocuments { (snapshot, error) in
-            guard let documents = snapshot?.documents else { return }
+            guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
             
             let posts = documents.map({ Post(dictionary: $0.data()) })
-            completion(posts)
+            completion(.success(posts))
         }
     }
     

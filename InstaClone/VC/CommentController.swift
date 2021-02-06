@@ -5,6 +5,10 @@
 //  Created by TAKEBUMI SUZUKI on 1/27/21.
 //
 
+//このページのVCがdeinitされない。
+//reloadData()やscrollToItemを実行する時には必ずしもdispatchQueue.main.asyncの中で行う必要があるのか。
+//commentInputView.commentTextViewと指定してresignFirstResponder()したらキーボードを閉じれた。
+
 
 import UIKit
 import ActiveLabel
@@ -15,12 +19,13 @@ private let reuseIdentifier = "CommentCell"
 class CommentController: UIViewController {
     
     // MARK: - Properties
-    let commentService = CommentService()
+    
     private let post: Post
-    var postViewModel: PostViewModel?  //Feedページと同じVMを使う為、画面遷移の際に渡してもらう。
+    var postViewModel: PostViewModel?  //Feedページと同じVMを使う。画面遷移の際にFeedから渡してもらう。
     var image: UIImage?
     var caption: String?  //以上4つはinit時に代入される
     
+    let commentService = CommentService()  //Listenerをremoveできるようにする為。
     private var comments = [Comment]()
     
     
@@ -33,7 +38,7 @@ class CommentController: UIViewController {
     }()
     
     private let captionLabel: ActiveLabel = {
-       let label = ActiveLabel()
+        let label = ActiveLabel()
         label.font = UIFont.systemFont(ofSize: 15)
         label.textColor = .black
         label.numberOfLines = 0  //ここがfeedページの二行固定のlabelとは違うところ。
@@ -41,21 +46,26 @@ class CommentController: UIViewController {
     }()
     
     private let headerView: UIView = {
-       let view = UIView()
+        let view = UIView()
         view.backgroundColor = .systemGray6
         return view
     }()
     
-    private let collectionView: UICollectionView = {
+    private lazy var collectionView: UICollectionView = {
         let cv = UICollectionView(frame: CGRect.zero, collectionViewLayout: UICollectionViewFlowLayout())
+        
+        cv.isUserInteractionEnabled = true
+        let tap = UITapGestureRecognizer(target: self, action: #selector(collectionViewTapped))
+        cv.addGestureRecognizer(tap)
         return cv
     }()
     
     private lazy var commentInputView: CustomInputAccesoryView = {  //layz varにしている理由はwidthでviewを使っているから。
+        
         let frame = CGRect(x: 0, y: 0, width: view.frame.width, height: 50)
-        let cv = CustomInputAccesoryView(config: .comments, frame: frame)
-        cv.delegate = self
-        return cv
+        let inputView = CustomInputAccesoryView(config: .comments, frame: frame)
+        inputView.delegate = self
+        return inputView
     }()
     
     // MARK: - Lifecycle
@@ -63,10 +73,6 @@ class CommentController: UIViewController {
     init(post: Post) {
         self.post = post
         super.init(nibName: nil, bundle: nil)
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
     }
     
     override func viewDidLoad() {
@@ -94,6 +100,14 @@ class CommentController: UIViewController {
         super.viewWillDisappear(animated)
         commentService.commentListener.remove()
         tabBarController?.tabBar.isHidden = false
+    }
+    
+    deinit {
+        print("------------------------Comment View DEINITIALIZING---------------------")
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
     
     
@@ -135,7 +149,6 @@ class CommentController: UIViewController {
     
     func configureCollectionView() {
         
-        navigationItem.title = "Comments"
         collectionView.dataSource = self
         collectionView.delegate = self
         
@@ -148,6 +161,7 @@ class CommentController: UIViewController {
     
     func configureUI(){
         
+        navigationItem.title = "Comments"
         view.backgroundColor = .white
         imageView.image = image
         captionLabel.text = caption
@@ -169,18 +183,25 @@ class CommentController: UIViewController {
         
     }
     
+    //MARK: - Actions
+    
+    @objc func collectionViewTapped(){  //キーボードをdismissする
+        commentInputView.commentTextView.resignFirstResponder()
+    }
+    
     
     // MARK: - API
     
     func fetchComments() {
-        
+
         commentService.fetchComments(forPost: post.postId) { [weak self] comments in
             guard let self = self else { return }
-            self.comments = comments
 
-            DispatchQueue.main.async {
-                self.collectionView.scrollToItem(at: IndexPath(row: 0, section: 0), at: .top, animated: true)
-            }
+            self.comments = comments
+            self.collectionView.reloadData()
+            //以下のように２行続けることにより新しいコメントが入った時に上から落ちてくるようなアニメーションをつけることができる。
+            self.collectionView.scrollToItem(at: IndexPath(row: 1, section: 0), at: .top, animated: false)
+            self.collectionView.scrollToItem(at: IndexPath(row: 0, section: 0), at: .top, animated: true)
         }
     }
 }
@@ -209,7 +230,7 @@ extension CommentController: UICollectionViewDelegateFlowLayout {
         
         let viewModel = CommentViewModel(comment: comments[indexPath.row])
         let labelWidth = view.frame.width - 54 - 60
-        let height = viewModel.sizeEstimate(forWidth: labelWidth).height + 18  //view.frame.widthの部分、imageの丸写真分を引かないといけないのでは?
+        let height = viewModel.sizeEstimate(forWidth: labelWidth).height + 18
         return CGSize(width: view.frame.width, height: height)
     }
 }
@@ -217,12 +238,19 @@ extension CommentController: UICollectionViewDelegateFlowLayout {
 
 // MARK: - CommentCellDelegate
 
-extension CommentController: CommentCellDelegate{
+extension CommentController: CommentCellDelegate{  //コメント左のプロファイル写真をタップした時
     
     func cell(_ cell: UICollectionViewCell, showUserProfileFor uid: String) {
-        UserService.fetchUser(withUid: uid) { user in
-            let controller = ProfileController(user: user)
-            self.navigationController?.pushViewController(controller, animated: true)
+        
+        UserService.fetchUser(withUid: uid) { (result) in
+            switch result{
+            case .failure(let error):
+                print("Error fetching user: \(error.localizedDescription)")
+            case .success(let user):
+                let vc = ProfileController(user: user)
+                self.navigationController?.pushViewController(vc, animated: true)
+                
+            }
         }
     }
 }
@@ -230,7 +258,7 @@ extension CommentController: CommentCellDelegate{
 
 // MARK: - CommentInputAccesoryViewDelegate
 
-extension CommentController: CustomInputAccesoryViewDelegate {
+extension CommentController: CustomInputAccesoryViewDelegate {  //accessoryViewのsendをタップした時。
     
     func inputView(_ inputView: CustomInputAccesoryView, wantsToUploadText text: String) {
         
@@ -238,16 +266,20 @@ extension CommentController: CustomInputAccesoryViewDelegate {
         guard let currentUser = tab.user else { return }
         showLoader(true)
         
-        CommentService.uploadComment(comment: text, post: post, user: currentUser) { error in
+        CommentService.uploadComment(comment: text, post: post, user: currentUser) { [weak self] error in
+            guard let self = self else{return}
             self.showLoader(false)
+            self.commentInputView.commentTextView.resignFirstResponder()
             if let error = error{
                 print("DEBUG: Error uploading comment. \(error)")
+                return
             }
             inputView.clearInputText()
-            
             NotificationService.uploadNotification(toUid: self.post.ownerUid,
                                                    fromUser: currentUser, type: .comment,
                                                    post: self.post)
         }
     }   //現在コメントの削除機能は実装されていない。
+    
 }
+

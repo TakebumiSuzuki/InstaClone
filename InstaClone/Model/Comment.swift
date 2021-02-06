@@ -8,12 +8,14 @@
 import Firebase
 
 struct Comment {  //Firestorage内でPostコレクションの中のpostドキュメント下に置かれる
+    
     let uid: String
     let username: String
     let profileImageUrl: String
     let commentText: String
     let postOwnerUid: String
     let timestamp: Timestamp
+    
     
     init(dictionary: [String: Any]) {
         self.uid = dictionary["uid"] as? String ?? ""

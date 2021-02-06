@@ -195,9 +195,14 @@ extension FeedController: FeedCellDelegate {
     
     //プロフィール表示。
     func cell(_ cell: FeedCell, wantsToShowProfileFor uid: String) {
-        UserService.fetchUser(withUid: uid) { user in  //エラーの時は途中でreturnされ何も起きないだけなので特にハンドリングの必要はない。
-            let vc = ProfileController(user: user)
-            self.navigationController?.pushViewController(vc, animated: true)
+        UserService.fetchUser(withUid: uid) { (result) in
+            switch result{
+            case .failure(let error):
+                print("DEBUG: Error fetching User: \(error.localizedDescription)")
+            case .success(let user):
+                let vc = ProfileController(user: user)
+                self.navigationController?.pushViewController(vc, animated: true)
+            }
         }
     }
     
