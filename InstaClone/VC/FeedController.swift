@@ -16,10 +16,7 @@ private let reuseIdentifier = "Cell"
 class FeedController: UICollectionViewController {
     
     // MARK: - Lifecycle
-    private var posts = [Post]()  //通常のfeed画面にはこちらの変数を使う
-//    {
-//        didSet { collectionView.reloadData() }
-//    }
+    private var posts = [Post]()  //通常の複数feed画面にはこちらの変数を使う
     
     var post: Post? {    //単体のポストを表示する場合にはこちらの変数を使う。ここがnilの時には上のpostsを使う。
         didSet { collectionView.reloadData() }
@@ -29,13 +26,15 @@ class FeedController: UICollectionViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         configureUI()
-        if post == nil{
-            fetchPosts(isFirstFetch: true)  //マルチポストモード
-            //このページを通して３箇所からfetchPostsが呼ばれる。ここのviewDidLoadとrefresherからはtrueで。paginationの場合はfalseで。
-        }else{
-            checkSinglePostLiked()  //単体ポストモード
+        
+        if post == nil{   //マルチポストモード
+            //このページを通して３箇所からこのfetchPostsメソッドが呼ばれる。ここのviewDidLoadとrefresherからはtrueで。paginationの場合はfalseで。
+            PostService.lastPostDoc = nil  //必要ないかもだが念のためpaginationの前回の読み込み最終ドキュメントをリセットする。新規ロードを行う為。
+            fetchPosts(isFirstFetch: true)
+            
+        }else{    //単体ポストモードの場合、既に特定のpostが代入されているので、likeされたかどうかのみチェックする。
+            checkSinglePostLiked()
         }
     }
     
@@ -54,7 +53,7 @@ class FeedController: UICollectionViewController {
             navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Logout", style: .plain, target: self,
                                                                action: #selector(handleLogout))
             navigationItem.rightBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "send2"), style: .plain, target: self,
-                                                                action: #selector(showMessages))
+                                                                action: #selector(showConversation))
         }
         
         refresher.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
@@ -75,7 +74,7 @@ class FeedController: UICollectionViewController {
                 nav.modalPresentationStyle = .fullScreen
                 self.present(nav, animated: true, completion: nil)
             } catch {
-                print("DEBUG: Failed to sign out")
+                print("DEBUG: Failed to sign out: \(error.localizedDescription)") //do catchでは自動で(変数定義なしで)errorが入ってくるよう。
             }
         }
         let action2 = UIAlertAction(title: "Cancel", style: .cancel) { (action) in
@@ -85,16 +84,17 @@ class FeedController: UICollectionViewController {
         present(alert, animated: true, completion: nil)
     }
     
-    @objc func showMessages() {   //ConversationsControllerをpush
+    @objc func showConversation() {   //ConversationsControllerをpush
         let vc = ConversationsController()
         navigationController?.pushViewController(vc, animated: true)
     }
     
     @objc func handleRefresh() {
-        if post == nil {  //マルチポストモード
-            PostService.lastPostDoc = nil  //refreshの際にはpaginationの付境界設定をリセットし、新規のロードを行う
+        if post == nil {  //マルチポストモードの場合
+            PostService.lastPostDoc = nil  //refreshの際にはpaginationの前回の読み込み最終ドキュメントをリセットする。新規ロードを行う為。
             fetchPosts(isFirstFetch: true)
-        }else{            //単体ポストモード
+            
+        }else{            //単体ポストモードの場合
             updatePost()
         }
     }
@@ -105,15 +105,15 @@ class FeedController: UICollectionViewController {
     
     func fetchPosts(isFirstFetch: Bool) {
         
-        PostService.fetchFeedPosts(isFirstFetch: isFirstFetch) { result in   //自分のuidからfeed postを取得すると同時にdidLikeも代入。
+        PostService.fetchFeedPosts(isFirstFetch: isFirstFetch) { result in   //自分のuidからfeed postを取得し、さらに同時にdidLikeも代入。
             
             switch result{
             case .failure(let error):
                 self.refresher.endRefreshing()
-                print("DEBUG: Failed to fetch posts \(error)")
-                self.showSimpleAlert(title: "Failed to download feed.Try again later.", message: "", actionTitle: "ok")
+                print("DEBUG: Failed to fetch posts: \(error)")
+                self.showSimpleAlert(title: "Failed to download feed. Try again later.", message: "", actionTitle: "ok")
                 
-            case .success(let posts):
+            case .success(let posts):   //paginationによる差分のみが上がってくる。
                 self.refresher.endRefreshing()
                 if isFirstFetch{
                     self.posts = []
@@ -129,7 +129,7 @@ class FeedController: UICollectionViewController {
         }
     }
     
-    func checkSinglePostLiked() {     //単体ポストの場合、viewDidLoadから呼ばれる。
+    func checkSinglePostLiked() {     //単体ポストの場合。このメソッドはviewDidLoadから呼ばれる。
         guard let post = post else { return }
         
         PostService.checkIfUserLikedPost(post: post) { (result) in
@@ -143,14 +143,14 @@ class FeedController: UICollectionViewController {
         }
     }
     
-    func updatePost(){    //単体ポストの場合、refresherから呼ばれる。
+    func updatePost(){    //単体ポストの場合。refresherから呼ばれる。
         guard let post = post else { refresher.endRefreshing(); return }
         
         PostService.fetchPost(withPostId: post.postId) { (result) in    //postIdを使って新しいpostをダウンロードする。
             switch result{
             case .failure(let error):
                 self.refresher.endRefreshing()
-                print("DEBUG Error fetching single post \(error.localizedDescription)")  //この場合にはalertを表示させる必要ないかと。
+                print("DEBUG Error fetching single post: \(error.localizedDescription)")  //この場合にはalertを表示させる必要ないかと。
             
             case .success(let updatedPost):
                 self.post = updatedPost
@@ -169,18 +169,18 @@ class FeedController: UICollectionViewController {
         }
     }
     
-    func deletePost(_ post: Post) {  //簡単に見えて超複雑。オプションボタンからのalertで選択可能。
+    func deletePost(_ post: Post) {  //簡単に見えて超複雑。オプションボタンから呼ばれる。
         self.showLoader(true)
         
         PostService.deletePost(post.postId) { (result) in
             switch result{
             case .failure(let error):
                 self.showLoader(false)
-                print("DEBUG: Error During Deleting Post. \(error.localizedDescription)")
+                print("DEBUG: Error During Deleting Post: \(error.localizedDescription)")
             case .success(let message):
+                self.showLoader(false)
                 if message == "YES"{
                     self.handleRefresh()
-                    self.showLoader(false)
                 }
             }
         }
@@ -213,9 +213,9 @@ extension FeedController: FeedCellDelegate {
         let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
         
 //        let editPostAction = UIAlertAction(title: "Edit Post", style: .default) { _ in //自分の投稿の場合
-//            //エディット画面のimplementationが抜けている。
-//            print("DEBUG: Edit post")
+//            //エディット画面のimplementationは未実装。
 //        }
+        
         let deletePostAction = UIAlertAction(title: "Delete Post", style: .destructive) { _ in //自分の投稿の場合
             self.deletePost(post)
         }
@@ -226,7 +226,7 @@ extension FeedController: FeedCellDelegate {
                 switch result{
                 case .failure(let error):
                     self.showLoader(false)
-                    print("DEBUG: Error unfollowing user. \(error.localizedDescription)")
+                    print("DEBUG: Error unfollowing user: \(error.localizedDescription)")
                 case .success(let message):
                     self.showLoader(false)
                     if message == "Succeed"{
@@ -243,7 +243,7 @@ extension FeedController: FeedCellDelegate {
                 switch result{
                 case .failure(let error):
                     self.showLoader(false)
-                    print("DEBUG: Error following user. \(error.localizedDescription)")
+                    print("DEBUG: Error following user: \(error.localizedDescription)")
                 case .success(let message):
                     self.showLoader(false)
                     if message == "Succeed"{
@@ -253,7 +253,7 @@ extension FeedController: FeedCellDelegate {
             }
         }
         
-        let cancelAction =  UIAlertAction(title: "Cancel", style: .cancel, handler: nil)  //キャンセルはどの場合でも表示される
+        let cancelAction =  UIAlertAction(title: "Cancel", style: .cancel, handler: nil)  //キャンセルはどの場合でも表示させる
         alert.addAction(cancelAction)
         
         if post.ownerUid == Auth.auth().currentUser?.uid { //自分のポストにはeditとdeleteとcancel
@@ -265,7 +265,7 @@ extension FeedController: FeedCellDelegate {
             UserService.checkIfUserIsFollowed(uid: post.ownerUid) { (result) in
                 switch result{
                 case .failure(let error):
-                    print("DEBUG: Error checking if user is followed. \(error.localizedDescription)")
+                    print("DEBUG: Error checking if user is followed: \(error.localizedDescription)")
                 case .success(let isFollowed):
                     if isFollowed {
                         alert.addAction(unfollowAction)
@@ -293,13 +293,10 @@ extension FeedController: FeedCellDelegate {
                 cell.viewModel?.post.likes -= 1    //以下の2つは即席で今見えている画面のUIの辻褄を合わせる為。これだけだとdequeueCellでバグになるので上の2つが必要
                 cell.viewModel?.post.didLike = false
                 
-                PostService.unlikePost(post: posts[row]) { error in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
+                PostService.unlikePost(post: posts[row]) { error in  //APIアクセスで2箇所変更(カウンター、post内のuser-likes)
+                    if let error = error{ print("Error unliking post: \(error.localizedDescription)"); return }
                     
-                    if let error = error{
-                        print(error.localizedDescription)
-                    }
-                    NotificationService.deleteNotification(toUid: ownerUid, type: .like,
-                                                           postId: self.posts[row].postId)
+                    NotificationService.deleteNotification(toUid: ownerUid, type: .like, postId: self.posts[row].postId)
                 }
             } else {
                 posts[row].likes += 1
@@ -307,13 +304,10 @@ extension FeedController: FeedCellDelegate {
                 cell.viewModel?.post.likes += 1
                 cell.viewModel?.post.didLike = true
                 
-                PostService.likePost(post: posts[row]) { error in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
+                PostService.likePost(post: posts[row]) { error in  //APIアクセスで2箇所変更(カウンター、post内のuser-likes)
+                    if let error = error{ print("Error liking post: \(error.localizedDescription)"); return }
                     
-                    if let error = error{
-                        print(error.localizedDescription)
-                    }
-                    NotificationService.uploadNotification(toUid: ownerUid, fromUser: user,
-                                                           type: .like, post: self.posts[row])
+                    NotificationService.uploadNotification(toUid: ownerUid, fromUser: user, type: .like, post: self.posts[row])
                 }
             }
             
@@ -325,18 +319,20 @@ extension FeedController: FeedCellDelegate {
                 self.post!.didLike = false  //実はこのブロックはシングルポストなのでdequeueしないのでこれら２行は必要ないが残しておく。
                 cell.viewModel?.post.likes -= 1    //以下の2つは即席で今見えている画面のUIの辻褄を合わせる為。これだけだとdequeueCellでバグになるので上の2つが必要
                 cell.viewModel?.post.didLike = false
-                PostService.unlikePost(post: self.post!) { _ in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
-                    NotificationService.deleteNotification(toUid: ownerUid, type: .like,
-                                                           postId: self.post!.postId)
+                PostService.unlikePost(post: self.post!) { error in  //APIアクセスで2箇所変更(カウンター、post内のuser-likes)
+                    if let error = error{ print("Error unliking post: \(error.localizedDescription)"); return }
+                    
+                    NotificationService.deleteNotification(toUid: ownerUid, type: .like, postId: self.post!.postId)
                 }
             } else {
                 self.post!.likes += 1
                 self.post!.didLike = true
                 cell.viewModel?.post.likes += 1
                 cell.viewModel?.post.didLike = true
-                PostService.likePost(post: self.post!) { _ in  //APIアクセスで3箇所変更(カウンター、post内のuser-likes, user内のpost-likes)
-                    NotificationService.uploadNotification(toUid: ownerUid, fromUser: user,
-                                                           type: .like, post: self.self.post!)
+                PostService.likePost(post: self.post!) { error in  //APIアクセスで2箇所変更(カウンター、post内のuser-likes)
+                    if let error = error{ print("Error liking post: \(error.localizedDescription)"); return }
+                    
+                    NotificationService.uploadNotification(toUid: ownerUid, fromUser: user, type: .like, post: self.self.post!)
                 }
             }
         }
@@ -347,16 +343,16 @@ extension FeedController: FeedCellDelegate {
         let vc = CommentController(post: post)
         vc.image = image
         vc.caption = caption
-        vc.postViewModel = cell.viewModel
+        vc.postViewModel = cell.viewModel      //viewModelはfeelControllerからのものをそのままコピーして引き継ぐ。
         navigationController?.pushViewController(vc, animated: true)
     }
     
 
     func cell(_ cell: FeedCell, wantsToViewLikesFor postId: String) {
         let vc = SearchController(config: .likes(postId))
-        vc.delegate = self    //一番下にあるdelegateMethod参照。likeしている人をタップした時に、その人のprofileページpushする。
+        vc.delegate = self    //一番下にあるdelegateMethod参照。likeしている人をタップした時に、その人のprofileページをこのfeedページ起点にpushする。
         let nav = UINavigationController(rootViewController: vc)
-        present(nav, animated: true, completion: nil)
+        navigationController?.pushViewController(nav, animated: true)
     }
     
     
@@ -414,7 +410,7 @@ extension FeedController: UICollectionViewDelegateFlowLayout {
 
 //MARK: - UICollectionViewDelegate
 
-extension FeedController{    //pagination(下に引っ張った時の挙動)
+extension FeedController{    //pagination起動時の挙動。UICollectionViewDelegateメソッド。
     
     override func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
         guard post == nil else{ return }    //単体ポストの場合はreturnされpagination手続きは実行されない。
@@ -440,14 +436,22 @@ extension FeedController {
     func handleMentionTapped(forCell cell: FeedCell) {
         cell.captionLabel.handleMentionTap { username in
             self.showLoader(true)
-            UserService.fetchUser(withUsername: username) { user in
-                self.showLoader(false)   //返り値のuserはオプショナルでエラーの場合にもここに値が返るようにしてあるので問題ない。
+            UserService.fetchUser(withUsername: username) { (result) in
+                self.showLoader(false)
                 
-                if let user = user {
+                switch result{
+                case .failure(let error):
+                    if error as? CustomError == CustomError.noUserExists{
+                        self.showSimpleAlert(title: "User @\(username) does not exist.", message: "", actionTitle: "ok")
+                    }else{
+                        print("DEBUG: Error fetching user from user name: \(error.localizedDescription)")
+                    }
+                    return
+                case .success(let user):
                     let vc = ProfileController(user: user)
                     self.navigationController?.pushViewController(vc, animated: true)
-                } else {
-                    self.showSimpleAlert(title: "User does not exist", message: "", actionTitle: "ok")
+                    return
+                
                 }
             }
         }

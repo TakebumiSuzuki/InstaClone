@@ -12,10 +12,10 @@ struct TimestampService{
     
     static var df = DateComponentsFormatter()
     
-    static func getStringDate(timeStamp: Timestamp) -> String?{
+    static func getStringDate(timeStamp: Timestamp, unitsStyle: DateComponentsFormatter.UnitsStyle) -> String?{
         TimestampService.df.allowedUnits = [.second, .minute, .hour, .day, .weekOfMonth]
         TimestampService.df.maximumUnitCount = 1
-        TimestampService.df.unitsStyle = .abbreviated
+        TimestampService.df.unitsStyle = unitsStyle
         return TimestampService.df.string(from: timeStamp.dateValue(), to: Date())
     }
 }

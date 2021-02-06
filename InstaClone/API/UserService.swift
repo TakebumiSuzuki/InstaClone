@@ -12,7 +12,7 @@ typealias FirestoreCompletion = (Error?) -> Void
 
 struct UserService {
     
-    //profileController、feedController、notificationControllerから。-------------------------------------------------
+    //profileController、feedController、notificationControllerから。-----------------------------------------------------
     static func fetchUser(withUid uid: String, completion: @escaping (Result<User, Error>) -> Void) {
         
         COLLECTION_USERS.document(uid).getDocument { snapshot, error in
@@ -24,16 +24,16 @@ struct UserService {
         }
     }
     
-    //username: String → comp(user) FeedControllerから。---------------------------------------------------------------
-    static func fetchUser(withUsername username: String, completion: @escaping (User?) -> Void) {
+    //FeedControllerから。----------------------------------------------------------------------------------------------
+    static func fetchUser(withUsername username: String, completion: @escaping (Result<User, Error>) -> Void) {
         
         COLLECTION_USERS.whereField("username", isEqualTo: username).getDocuments { snapshot, error in
-            guard let document = snapshot?.documents.first else {  //errorの場合も、ここで一緒にreturnされる。
-                completion(nil)
-                return
-            }
+            //errorの場合も、下の行で一緒にreturnされる。
+            guard let documents = snapshot?.documents else{ completion(.failure(CustomError.snapShotIsNill)); return }
+            guard let document = documents.first else { completion(.failure(CustomError.noUserExists)); return }
+            
             let user = User(dictionary: document.data())
-            completion(user)
+            completion(.success(user))
         }
     }
     

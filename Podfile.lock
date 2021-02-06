@@ -219,6 +219,8 @@ PODS:
   - BoringSSL-GRPC/Implementation (0.0.7):
     - BoringSSL-GRPC/Interface (= 0.0.7)
   - BoringSSL-GRPC/Interface (0.0.7)
+  - Firebase (7.5.0):
+    - Firebase/Core (= 7.5.0)
   - Firebase/Auth (7.5.0):
     - Firebase/CoreOnly
     - FirebaseAuth (~> 7.5.0)
@@ -368,6 +370,7 @@ PODS:
 
 DEPENDENCIES:
   - ActiveLabel
+  - Firebase
   - Firebase/Auth
   - Firebase/Core
   - Firebase/Database
@@ -439,6 +442,6 @@ SPEC CHECKSUMS:
   SteviaLayout: c2ecdcff57d44e38fd2f65e54ad52aeae28ca0c4
   YPImagePicker: 15aed8bcaa4dad976e11b6114126d731a2f9f3c9
 
-PODFILE CHECKSUM: 6f1bb2e6c5c97fbc3ae7c203b47a790b4f9a5f7c
+PODFILE CHECKSUM: dce97c8333b32bbd98e406a38696872bf866fc4c
 
 COCOAPODS: 1.10.1

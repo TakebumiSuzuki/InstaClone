@@ -65,10 +65,23 @@
 		0C0C092B25C169DA006C79C5 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0C0C092A25C169DA006C79C5 /* GoogleService-Info.plist */; };
 		0C0C093025C1732F006C79C5 /* CustomButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0C092F25C1732F006C79C5 /* CustomButton.swift */; };
 		0C0C093525C18C11006C79C5 /* Billabong.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0C0C093425C18C11006C79C5 /* Billabong.ttf */; };
+		0C9B3BD025CEDE0200261667 /* InstaCloneTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9B3BCF25CEDE0200261667 /* InstaCloneTests.swift */; };
+		0C9B3BE225CEDF1200261667 /* RegistrationControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9B3BE125CEDF1200261667 /* RegistrationControllerTests.swift */; };
 		0CA0E91625C6D33E00BDD123 /* CustomError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA0E91525C6D33E00BDD123 /* CustomError.swift */; };
 		0CA0E91A25C97AE400BDD123 /* TimestampService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA0E91925C97AE400BDD123 /* TimestampService.swift */; };
 		4ACE9768C0A7F2172779C96B /* Pods_InstaClone.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F6AC4F6EA7832FD313E77B7 /* Pods_InstaClone.framework */; };
+		68BBF1D63C7D451F59242A27 /* Pods_InstaCloneTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0EA93B66AE20CF3E0C85BFD6 /* Pods_InstaCloneTests.framework */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0C9B3BD225CEDE0200261667 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0C0C082C25C091DD006C79C5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0C0C083325C091DD006C79C5;
+			remoteInfo = InstaClone;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		0C0C083425C091DD006C79C5 /* InstaClone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InstaClone.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -131,11 +144,18 @@
 		0C0C092A25C169DA006C79C5 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		0C0C092F25C1732F006C79C5 /* CustomButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomButton.swift; sourceTree = "<group>"; };
 		0C0C093425C18C11006C79C5 /* Billabong.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = Billabong.ttf; path = Billabong/Billabong.ttf; sourceTree = SOURCE_ROOT; };
+		0C9B3BCD25CEDE0100261667 /* InstaCloneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InstaCloneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0C9B3BCF25CEDE0200261667 /* InstaCloneTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstaCloneTests.swift; sourceTree = "<group>"; };
+		0C9B3BD125CEDE0200261667 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		0C9B3BE125CEDF1200261667 /* RegistrationControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegistrationControllerTests.swift; sourceTree = "<group>"; };
 		0CA0E91525C6D33E00BDD123 /* CustomError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomError.swift; sourceTree = "<group>"; };
 		0CA0E91925C97AE400BDD123 /* TimestampService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimestampService.swift; sourceTree = "<group>"; };
+		0EA93B66AE20CF3E0C85BFD6 /* Pods_InstaCloneTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_InstaCloneTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2539147B5DDFBC833335F3A8 /* Pods-InstaClone.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InstaClone.release.xcconfig"; path = "Target Support Files/Pods-InstaClone/Pods-InstaClone.release.xcconfig"; sourceTree = "<group>"; };
+		52CA783C64FEF241AE7C5708 /* Pods-InstaCloneTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InstaCloneTests.release.xcconfig"; path = "Target Support Files/Pods-InstaCloneTests/Pods-InstaCloneTests.release.xcconfig"; sourceTree = "<group>"; };
 		5F6AC4F6EA7832FD313E77B7 /* Pods_InstaClone.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_InstaClone.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C14381A715CFC0EFD0D33BA /* Pods-InstaClone.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InstaClone.debug.xcconfig"; path = "Target Support Files/Pods-InstaClone/Pods-InstaClone.debug.xcconfig"; sourceTree = "<group>"; };
+		D7566AFD32AAAEB77D856606 /* Pods-InstaCloneTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InstaCloneTests.debug.xcconfig"; path = "Target Support Files/Pods-InstaCloneTests/Pods-InstaCloneTests.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -147,6 +167,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0C9B3BCA25CEDE0100261667 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				68BBF1D63C7D451F59242A27 /* Pods_InstaCloneTests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -154,6 +182,7 @@
 			isa = PBXGroup;
 			children = (
 				0C0C083625C091DD006C79C5 /* InstaClone */,
+				0C9B3BCE25CEDE0200261667 /* InstaCloneTests */,
 				0C0C083525C091DD006C79C5 /* Products */,
 				3E14C82228F499F9D412F9DF /* Pods */,
 				57E79268CE50D5249E7447F4 /* Frameworks */,
@@ -164,6 +193,7 @@
 			isa = PBXGroup;
 			children = (
 				0C0C083425C091DD006C79C5 /* InstaClone.app */,
+				0C9B3BCD25CEDE0100261667 /* InstaCloneTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -348,11 +378,23 @@
 			path = CustomUIView;
 			sourceTree = "<group>";
 		};
+		0C9B3BCE25CEDE0200261667 /* InstaCloneTests */ = {
+			isa = PBXGroup;
+			children = (
+				0C9B3BE125CEDF1200261667 /* RegistrationControllerTests.swift */,
+				0C9B3BCF25CEDE0200261667 /* InstaCloneTests.swift */,
+				0C9B3BD125CEDE0200261667 /* Info.plist */,
+			);
+			path = InstaCloneTests;
+			sourceTree = "<group>";
+		};
 		3E14C82228F499F9D412F9DF /* Pods */ = {
 			isa = PBXGroup;
 			children = (
 				7C14381A715CFC0EFD0D33BA /* Pods-InstaClone.debug.xcconfig */,
 				2539147B5DDFBC833335F3A8 /* Pods-InstaClone.release.xcconfig */,
+				D7566AFD32AAAEB77D856606 /* Pods-InstaCloneTests.debug.xcconfig */,
+				52CA783C64FEF241AE7C5708 /* Pods-InstaCloneTests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -361,6 +403,7 @@
 			isa = PBXGroup;
 			children = (
 				5F6AC4F6EA7832FD313E77B7 /* Pods_InstaClone.framework */,
+				0EA93B66AE20CF3E0C85BFD6 /* Pods_InstaCloneTests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -387,6 +430,26 @@
 			productReference = 0C0C083425C091DD006C79C5 /* InstaClone.app */;
 			productType = "com.apple.product-type.application";
 		};
+		0C9B3BCC25CEDE0100261667 /* InstaCloneTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0C9B3BD625CEDE0200261667 /* Build configuration list for PBXNativeTarget "InstaCloneTests" */;
+			buildPhases = (
+				CCA22611E73B0360331E6E30 /* [CP] Check Pods Manifest.lock */,
+				0C9B3BC925CEDE0100261667 /* Sources */,
+				0C9B3BCA25CEDE0100261667 /* Frameworks */,
+				0C9B3BCB25CEDE0100261667 /* Resources */,
+				73959905AA26F009F351980C /* [CP] Embed Pods Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0C9B3BD325CEDE0200261667 /* PBXTargetDependency */,
+			);
+			name = InstaCloneTests;
+			productName = InstaCloneTests;
+			productReference = 0C9B3BCD25CEDE0100261667 /* InstaCloneTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -398,6 +461,10 @@
 				TargetAttributes = {
 					0C0C083325C091DD006C79C5 = {
 						CreatedOnToolsVersion = 12.3;
+					};
+					0C9B3BCC25CEDE0100261667 = {
+						CreatedOnToolsVersion = 12.3;
+						TestTargetID = 0C0C083325C091DD006C79C5;
 					};
 				};
 			};
@@ -415,6 +482,7 @@
 			projectRoot = "";
 			targets = (
 				0C0C083325C091DD006C79C5 /* InstaClone */,
+				0C9B3BCC25CEDE0100261667 /* InstaCloneTests */,
 			);
 		};
 /* End PBXProject section */
@@ -428,6 +496,13 @@
 				0C0C092B25C169DA006C79C5 /* GoogleService-Info.plist in Resources */,
 				0C0C084125C091DF006C79C5 /* Assets.xcassets in Resources */,
 				0C0C093525C18C11006C79C5 /* Billabong.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0C9B3BCB25CEDE0100261667 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -451,6 +526,23 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-InstaClone/Pods-InstaClone-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		73959905AA26F009F351980C /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-InstaCloneTests/Pods-InstaCloneTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-InstaCloneTests/Pods-InstaCloneTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-InstaCloneTests/Pods-InstaCloneTests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		C081C91EB17CFC5F5E386E4F /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -467,6 +559,28 @@
 			);
 			outputPaths = (
 				"$(DERIVED_FILE_DIR)/Pods-InstaClone-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		CCA22611E73B0360331E6E30 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-InstaCloneTests-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -539,7 +653,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0C9B3BC925CEDE0100261667 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0C9B3BE225CEDF1200261667 /* RegistrationControllerTests.swift in Sources */,
+				0C9B3BD025CEDE0200261667 /* InstaCloneTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0C9B3BD325CEDE0200261667 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0C0C083325C091DD006C79C5 /* InstaClone */;
+			targetProxy = 0C9B3BD225CEDE0200261667 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		0C0C084225C091DF006C79C5 /* LaunchScreen.storyboard */ = {
@@ -709,6 +840,48 @@
 			};
 			name = Release;
 		};
+		0C9B3BD425CEDE0200261667 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D7566AFD32AAAEB77D856606 /* Pods-InstaCloneTests.debug.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = KTQR7K9373;
+				INFOPLIST_FILE = InstaCloneTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.djtake.InstaCloneTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/InstaClone.app/InstaClone";
+			};
+			name = Debug;
+		};
+		0C9B3BD525CEDE0200261667 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 52CA783C64FEF241AE7C5708 /* Pods-InstaCloneTests.release.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = KTQR7K9373;
+				INFOPLIST_FILE = InstaCloneTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.djtake.InstaCloneTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/InstaClone.app/InstaClone";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -726,6 +899,15 @@
 			buildConfigurations = (
 				0C0C084925C091DF006C79C5 /* Debug */,
 				0C0C084A25C091DF006C79C5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0C9B3BD625CEDE0200261667 /* Build configuration list for PBXNativeTarget "InstaCloneTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C9B3BD425CEDE0200261667 /* Debug */,
+				0C9B3BD525CEDE0200261667 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

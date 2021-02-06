@@ -5,7 +5,7 @@
 //  Created by TAKEBUMI SUZUKI on 1/27/21.
 //
 
-//このページのVCがdeinitされない。
+//このページのVCがdeinitされない→解決!!ActiveLabelのクロージャーが原因だった。
 //reloadData()やscrollToItemを実行する時には必ずしもdispatchQueue.main.asyncの中で行う必要があるのか。
 //commentInputView.commentTextViewと指定してresignFirstResponder()したらキーボードを閉じれた。
 
@@ -98,7 +98,7 @@ class CommentController: UIViewController {
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        commentService.commentListener.remove()
+        commentService.commentListener.remove()  //このラインのお陰でListenerが重複しないだけでなく、deinitできる。
         tabBarController?.tabBar.isHidden = false
     }
     
@@ -119,31 +119,38 @@ class CommentController: UIViewController {
         captionLabel.enabledTypes = postViewModel?.enabledTypes ?? []
         postViewModel?.customizeLabel(captionLabel)
         
-        captionLabel.handleHashtagTap { hashtag in
+        captionLabel.handleHashtagTap { [weak self] hashtag in
             let vc = HashtagPostsController(hashtag: hashtag.lowercased())
-            self.navigationController?.pushViewController(vc, animated: true)
+            self?.navigationController?.pushViewController(vc, animated: true)
         }
-        captionLabel.handleMentionTap { username in
+        captionLabel.handleMentionTap { [weak self] username in
+            guard let self = self else {return}
             self.showLoader(true)
-            UserService.fetchUser(withUsername: username) { user in  //エラーの場合には user=nil で返される
-                self.showLoader(false)
-                
-                if let user = user {
+            
+            UserService.fetchUser(withUsername: username) { (result) in
+                switch result{
+                case .failure(let error):
+                    if error as? CustomError == CustomError.noUserExists{
+                        self.showSimpleAlert(title: "User @\(username) does not exist.", message: "", actionTitle: "ok")
+                    }else{
+                        print("DEBUG: Error fetching user from user name: \(error.localizedDescription)")
+                    }
+                    return
+                    
+                case .success(let user):
                     let vc = ProfileController(user: user)
                     self.navigationController?.pushViewController(vc, animated: true)
-                } else {
-                    self.showSimpleAlert(title: "User does not exist", message: "", actionTitle: "ok")
                 }
             }
         }
-        captionLabel.handleURLTap { (url) in
+        captionLabel.handleURLTap { [weak self] (url) in
             var urlString = url.absoluteString
             if !(["http", "https"].contains(urlString.lowercased())) {
                 urlString = "http://\(urlString)"
             }
             guard let appendedUrl = URL(string: urlString) else{return}
             let vc = SFSafariViewController(url: appendedUrl)
-            self.present(vc, animated: true, completion: nil)
+            self?.present(vc, animated: true, completion: nil)
         }
     }
     
@@ -194,9 +201,8 @@ class CommentController: UIViewController {
     
     func fetchComments() {
 
-        commentService.fetchComments(forPost: post.postId) { [weak self] comments in
-            guard let self = self else { return }
-
+        commentService.fetchComments(forPost: post.postId) { comments in
+            
             self.comments = comments
             self.collectionView.reloadData()
             //以下のように２行続けることにより新しいコメントが入った時に上から落ちてくるようなアニメーションをつけることができる。
@@ -266,8 +272,8 @@ extension CommentController: CustomInputAccesoryViewDelegate {  //accessoryView�
         guard let currentUser = tab.user else { return }
         showLoader(true)
         
-        CommentService.uploadComment(comment: text, post: post, user: currentUser) { [weak self] error in
-            guard let self = self else{return}
+        CommentService.uploadComment(comment: text, post: post, user: currentUser) { error in
+            
             self.showLoader(false)
             self.commentInputView.commentTextView.resignFirstResponder()
             if let error = error{

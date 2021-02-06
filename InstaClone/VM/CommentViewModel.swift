@@ -17,7 +17,7 @@ struct CommentViewModel {
     var profileImageUrl: URL? { return URL(string: comment.profileImageUrl) }
     
     var timeStamp: String {
-        let time = TimestampService.getStringDate(timeStamp: comment.timestamp) ?? ""
+        let time = TimestampService.getStringDate(timeStamp: comment.timestamp, unitsStyle: .abbreviated) ?? ""
         return time
     }
     

@@ -52,8 +52,8 @@ class PostService {
                                 group.leave()
                             }
                     })
-                    group.enter()
-                    COLLECTION_USERS.document(user.uid).collection("user-feed").document(docRef.documentID)  //自分自身のフィードにも。
+                    group.enter()  //投稿者の自分自身のフィードにも。
+                    COLLECTION_USERS.document(user.uid).collection("user-feed").document(docRef.documentID)
                         .setData(userFeedData) { (error) in
                             if let error = error { completion(error); group.leave(); return}
                             group.leave()
@@ -77,7 +77,7 @@ class PostService {
         }
     }
     
-    //特定のuidのポストを時系列に。ProfileController下部のpost欄から。Paginateion必要かと。--------------------------------------------
+    //ProfileController下部のpost欄から。特定のuidのポストを時系列に。Paginateion必要かと。--------------------------------------------
     static func fetchPosts(forUser uid: String, completion: @escaping (Result<[Post], Error>) -> Void) {
         let query = COLLECTION_POSTS.whereField("ownerUid", isEqualTo: uid)
         
@@ -92,7 +92,7 @@ class PostService {
         }
     }
     
-    //FeedController、NotificationControllerから。単体PostIDからPost作成-------------------------------------------------------------
+    //FeedController、NotificationControllerから。単体PostIDからPost作成----------------------------------------------------------
     static func fetchPost(withPostId postId: String, completion: @escaping (Result<(Post), Error>) -> Void) {
         
         COLLECTION_POSTS.document(postId).getDocument { snapshot, error in
@@ -104,7 +104,7 @@ class PostService {
         }
     }
     
-    //SearchControllerから。----------------------------------------------------------------
+    //SearchControllerから。---------------------------------------------------------------------------------------------------
     static func fetchPosts(forHashtag hashtag: String, completion: @escaping ([Post]) -> Void) {
         var posts = [Post]()
         COLLECTION_POSTS.whereField("hashtags", arrayContains: hashtag).getDocuments { (snapshot, error) in
@@ -120,12 +120,12 @@ class PostService {
         }
     }
     
-    //FeedControllerから。----------------------------------------------------------------------------
+    //FeedControllerから。--------------------------------------------------------------------------------------------------
     static func likePost(post: Post, completion: @escaping (Error?) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { completion(CustomError.currentUserNil); return }
         let group = DispatchGroup()
         
-        group.enter()  //この下ではクライアント上で先にカウント+1したlike数をそのまま書き込んでいるが、これはバグの元になるので書き換え必要。
+        group.enter()
         COLLECTION_POSTS.document(post.postId).updateData(["likes": FieldValue.increment(Int64(+1))]) { (error) in
             if let error = error{ completion(error); return}
             group.leave()
@@ -140,13 +140,13 @@ class PostService {
         group.notify(queue: .main) { completion(nil) }
     }
     
-    //FeelControllerから。----------------------------------------------------------------------------
+    //FeelControllerから。-------------------------------------------------------------------------------------------------
     static func unlikePost(post: Post, completion: @escaping (Error?) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { completion(CustomError.currentUserNil); return }
-        guard post.likes >= 0 else { completion(CustomError.currentUserNil); return }
+        guard post.likes >= 0 else { completion(CustomError.postLikeIsMinus); return }
         let group = DispatchGroup()
         
-        group.enter()  //この下ではクライアント上で先にカウント+1したlike数をそのまま書き込んでいるが、これはバグの元になるので書き換え必要。
+        group.enter()
         COLLECTION_POSTS.document(post.postId).updateData(["likes": FieldValue.increment(Int64(-1))]) { (error) in
             if let error = error{ completion(error); return}
             group.leave()
@@ -160,7 +160,7 @@ class PostService {
         group.notify(queue: .main) { completion(nil) }
     }
     
-    //FeelControllerから。------------------------------------------------------------------------------------------------------
+    //FeelControllerから。--------------------------------------------------------------------------------------------------
     static func checkIfUserLikedPost(post: Post, completion: @escaping (Result<Bool, Error>) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return }
         
@@ -174,7 +174,7 @@ class PostService {
     
     
     static var lastPostDoc : DocumentSnapshot?
-    //userのfeedコレクションから自分用feed postsを取り出す。---------------------------------------------
+    //userのfeedコレクションから自分用feed postsを取り出す。----------------------------------------------------------------------
     static func fetchFeedPosts(isFirstFetch: Bool, completion: @escaping (Result<[Post], Error>) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else {completion(.failure(CustomError.currentUserNil));return }
         var posts = [Post]()
@@ -183,17 +183,16 @@ class PostService {
         if isFirstFetch == true{
             ref = COLLECTION_USERS.document(uid).collection("user-feed").order(by: "timestamp", descending: true).limit(to: 3)
         }else{
+            //ここをはしょってref.star()という風に書くと機能しない。
             guard let lastDocument = PostService.lastPostDoc else{return}
             ref = COLLECTION_USERS.document(uid).collection("user-feed").order(by: "timestamp", descending: true).limit(to: 3).start(afterDocument: lastDocument)
         }
         
         ref.getDocuments { snapshot, error in
-            if let error = error{
-                completion(.failure(error))
-                return
-            }
-            guard let snapshot = snapshot else {completion(.failure(CustomError.snapShotIsNill)); return}
-            print("DLしたスナップショットの数は\(snapshot.documents.count)")
+            if let error = error{ completion(.failure(error)); return }
+            guard let snapshot = snapshot else { completion(.failure(CustomError.snapShotIsNill)); return }
+            
+            print("PaginationでDLしたスナップショットの数は\(snapshot.documents.count)です。")
             PostService.lastPostDoc = snapshot.documents.last
             
             let group = DispatchGroup()
@@ -215,7 +214,7 @@ class PostService {
                             }
                             postMutable.didLike = didLike
                             posts.append(postMutable)
-                            group.leave()
+                            group.leave()  //以上のforEach作業で時間順が崩れるので下で再度整列させている。
                         }
                     }
                 }

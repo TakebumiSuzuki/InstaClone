@@ -16,7 +16,10 @@ target 'InstaClone' do
 	pod 'SDWebImage'
 	pod 'JGProgressHUD','~>2.0.3'
 	pod 'YPImagePicker'
-
+  target  'InstaCloneTests' do
+          inherit! :search_paths
+          pod 'Firebase'
+          end
 end
 
 post_install do |installer|

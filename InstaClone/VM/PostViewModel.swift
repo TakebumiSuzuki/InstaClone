@@ -69,12 +69,7 @@ struct PostViewModel {
     }
     
     var timestampString: String? {
-        let formatter = DateComponentsFormatter()  //メモリ節約のためこれはグローバル変数またはstaticにするべきでは？
-        formatter.allowedUnits = [.second, .minute, .hour, .day, .weekOfMonth]
-        formatter.maximumUnitCount = 1
-        formatter.unitsStyle = .full
-        return formatter.string(from: post.timestamp.dateValue(), to: Date())
+        TimestampService.getStringDate(timeStamp: post.timestamp, unitsStyle: .full)
     }
-
     
 }

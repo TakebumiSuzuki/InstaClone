@@ -18,14 +18,13 @@ protocol FeedCellDelegate: class {
 }
 
 
-//shareButton(折り紙飛行機)のタップアクションが定義されていない
 class FeedCell: UICollectionViewCell {
     
     // MARK: - Properties
     
     //ポイントはFeedController上で cell.viewModel?.post.ownerUsername = "test" などとやるとpostとシンクロして
     //viewModelが更新され、その結果、didSetが起動し、UIも連動して更新されるという事。自動アップデートができる。
-    //これは即席でcell上のUIを変化させるのに使える。根本的にはグローバルの[Post]をアップデートする必要がある(dequeueに対応する為)。
+    //これは即席でcell上のUIを変化させる。根本的にはグローバル変数の[Post]をアップデートする必要がある(dequeueに対応する為)。
     var viewModel: PostViewModel? {  //viewModelはcellが作られる時に、postを使って作られ、同時に代入される
         didSet { configure() }
     }
@@ -83,7 +82,7 @@ class FeedCell: UICollectionViewCell {
         return button
     }()
     
-    private lazy var shareButton: UIButton = {  //このshareButtonにアクションをつけ忘れている。
+    private lazy var shareButton: UIButton = {
         let button = UIButton(type: .system)
         button.setImage(#imageLiteral(resourceName: "send2"), for: .normal)
         button.tintColor = .black
@@ -101,10 +100,10 @@ class FeedCell: UICollectionViewCell {
         return label
     }()
     
-    lazy var captionLabel: ActiveLabel = {  //ActiveLableについては調べる必要あり
-        let label = ActiveLabel()   //viewModel側の設定で、usernameとcaptionを続けて表示するようにしている。
+    lazy var captionLabel: ActiveLabel = {
+        let label = ActiveLabel()   //viewModel側の設定で、usernameとcaptionを続けてひとかたまりのcaptionとして表示するようにしている。
         label.numberOfLines = 2
-        label.delegate = self
+        label.delegate = self  //ActiveLabelのソースコード内にprotocolがある。commentControllerをpushさせる為に。
         return label
     }()
     
@@ -228,11 +227,12 @@ class FeedCell: UICollectionViewCell {
    
 }
 
-extension FeedCell: ActiveLabelDelegate{
+extension FeedCell: ActiveLabelDelegate{  //activeLabelのソースコード内にプロトコルの定義がある。
     func didSelect(_ text: String, type: ActiveType) {
     }
     
-    func didTapNonActiveArea() {  //activeLabelソースコード内を修正して加えたdelegateMethod。コメントボタンを押した時と同じ動作に。
+    //activeLabelソースコード内を修正して加えたdelegateMethod。コメントボタンを押した時と同じくcommentControllerがpushされるように。
+    func didTapNonActiveArea() {
         didTapComments()
     }
     

@@ -19,9 +19,8 @@ struct Post {
     let timestamp: Timestamp
     let hashtags: [String]
     
-    
     var didLike = false   //このプロパティはオブジェクト作成後に別のAPIfetchから代入する。firestoreには保存しない。
-    //このポストに対し自分がlikeしているかどうか
+    //このポストに対し自分(currentUser)がlikeしているかどうか
     
     
     init(dictionary: [String: Any]) {
