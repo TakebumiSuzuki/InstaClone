@@ -14,15 +14,15 @@ private let headerIdentifier = "ProfileHeader"
 //画面上半分のheaderViewを表示させるため、ProfileHeaderViewModelを作り、自分がdelegateになる。
 //画面半分下のポストをタップすると、その単体のポストでFeedControllerをpush。各ポストのcellに対してPostViewModelを作る。
 //headerViewではProfileHeaerVMとProfileHeaderViewが、cellにはProfileCellとPostVMが使われている。
-//問題となるのはuserが自分の時→Tabbarに組み込まれるのでviewDidLoadは一回のみ。さらにdeinitされない。
-//userが他人の時→別画面からpushされるのでviewDidLoadとdeinitはその度に呼ばれる。これが論理混乱の元となる。
+//問題となるのはuserが自分の時→Tabbarに組み込まれるのでviewDidLoadは一回のみ。さらにdeinitされない。一方で、userが他人の時→別画面からpushされる
+//のでviewDidLoadとdeinitはその度に呼ばれる。これが論理混乱の元となっていたがviewWillAppear内でAPIコールする事で解決。
 
 class ProfileController: UICollectionViewController {
     
     // MARK: - Properties
     
     //userはアプリ起動時には自分のuserが入るが、使用中の経路により、他人のuserにもなりうる
-    //userをクラスにしたため、didSetはもはや作動しないので消して良いかと。
+    //userをクラスにしたため、didSetはもはや作動しないので消しても良いかと。
     private var user: User {
         didSet {
             collectionView.reloadData()
@@ -30,6 +30,7 @@ class ProfileController: UICollectionViewController {
     }
     private var posts = [Post]()
     
+    private let refresher = UIRefreshControl()
     
     // MARK: - Lifecycle
     
@@ -57,7 +58,7 @@ class ProfileController: UICollectionViewController {
                 
             case .success(let user):
                 self.navigationItem.title = user.username
-                self.checkIfUserIsFollowed()  //APIアクセスをして自分がuserをフォローしているかを調べてuserオブジェクトを更新(Boolを代入する)。最後でreloadData()が実行される
+                self.checkIfUserIsFollowed()  //APIアクセスをして自分がそのuserをフォローしているかを調べてuserオブジェクトを更新(Boolを代入する)。最後でreloadData()が実行される
                 self.fetchUserStats()  //APIアクセスをしてuserのstatsオブジェクトを生成して、userオブジェクトに代入する。最後でreloadData()が実行される
                 self.fetchPosts()  //APIアクセスをしてpost配列をget。最後でreloadData()が実行される
             }
@@ -65,7 +66,7 @@ class ProfileController: UICollectionViewController {
    }
     
     deinit {
-        print("profilecontroller deinited------------------------------------------------")
+        print("---------------------Profilecontroller is being DEINITIALIZED-----------------------")
     }
     
     
@@ -79,7 +80,7 @@ class ProfileController: UICollectionViewController {
                                 forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
                                 withReuseIdentifier: headerIdentifier)
         
-        let refresher = UIRefreshControl()
+        
         refresher.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
         collectionView.refreshControl = refresher
     }
@@ -94,7 +95,7 @@ class ProfileController: UICollectionViewController {
 
     // MARK: - Actions
     
-    @objc func handleRefresh() {  //checkIfUserIsFollowed()をここに含める必要はない。他ユーザーからの干渉はないので。
+    @objc private func handleRefresh() {  //checkIfUserIsFollowed()をここに含める必要はない。他ユーザーからの干渉はないので。
         fetchPosts()
         fetchUserStats()
     }
@@ -102,11 +103,11 @@ class ProfileController: UICollectionViewController {
     
     // MARK: - API
     //これらのメソッドはuserとpostsをmutateする。
-    func checkIfUserIsFollowed() {  //中央のボタンの表示(3種類ある)がどれになるかを決定するために必要
+    private func checkIfUserIsFollowed() {  //中央のボタンの表示(3種類ある)がどれになるかを決定するために必要
         UserService.checkIfUserIsFollowed(uid: user.uid) { (result) in
             switch result{
             case .failure(let error):
-                print("DEBUG: Error cheking if user is followed. \(error)")
+                print("DEBUG: Error cheking if user is followed: \(error)")
             case .success(let isFollowed):
                 self.user.isFollowed = isFollowed
                 self.collectionView.reloadData()
@@ -114,23 +115,25 @@ class ProfileController: UICollectionViewController {
         }
     }
     
-    func fetchUserStats() {
-        UserService.fetchUserStats(uid: user.uid) { stats in
-            self.user.stats = stats   //statsの値が変化していなくてもこのラインがある事によりuserのdidSetは必ず発動される。
+    private func fetchUserStats() {
+        UserService.fetchUserStats(uid: user.uid) { stats in  //errorになった数値は初期値0のまま。
+            self.user.stats = stats
             self.collectionView.reloadData()
         }
     }
     
-    func fetchPosts() {  // 一つ上のfetchUserStatsとかなり被ったAPIアクセスなのでお金の無駄が生じているかと。。
+    private func fetchPosts() {
         PostService.fetchPosts(forUser: user.uid) { result in
             switch result{
-            case .failure(_):
+            case .failure(let error):
+                self.refresher.endRefreshing()
+                print("DEBUG: Error fetching posts \(error.localizedDescription)")
                 self.showSimpleAlert(title: "Error", message: "Fialed to download new posts", actionTitle: "ok")
-                self.collectionView.refreshControl?.endRefreshing()
+                
             case .success(let posts):
+                self.refresher.endRefreshing()
                 self.posts = posts
                 self.collectionView.reloadData()
-                self.collectionView.refreshControl?.endRefreshing()
             }
         }
     }
@@ -201,20 +204,28 @@ extension ProfileController: ProfileHeaderDelegate {
             user.isFollowed = false
             user.stats.followers -= 1
             profileHeader.configure()  //userはクラスオブジェクトなので一番上のdidSetは機能しなくなっている。代わりにこれでok。
-            UserService.unfollow(uid: user.uid) { error in
-                
-                NotificationService.deleteNotification(toUid: user.uid, type: .follow)
+            UserService.unfollow(uid: user.uid) { (result) in
+                switch result{
+                case .failure(let error):
+                    print("DEBUG: Error unfollowing friend: \(error.localizedDescription)")
+                case .success(_):
+                    NotificationService.deleteNotification(toUid: user.uid, type: .follow)
+                }
             }
             
         } else {     //フォローしていない人の写真を見ている場合→フォロー
             user.isFollowed = true
             user.stats.followers += 1
             profileHeader.configure()
-            UserService.follow(uid: user.uid) { error in
-                
-                NotificationService.uploadNotification(toUid: user.uid, fromUser: currentUser, type: .follow) { (error) in
-                    if let error = error{
-                        print("DEBUG: Error sending following notification in ProfileHeaderDelegate: \(error.localizedDescription)")
+            UserService.follow(uid: user.uid) { (result) in
+                switch result{
+                case .failure(let error):
+                    print("DEBUG: Error following friend: \(error.localizedDescription)")
+                case .success(_):
+                    NotificationService.uploadNotification(toUid: user.uid, fromUser: currentUser, type: .follow) { (error) in
+                        if let error = error{
+                            print("DEBUG: Error sending following notification in ProfileHeaderDelegate: \(error.localizedDescription)")
+                        }
                     }
                 }
             }
@@ -257,7 +268,8 @@ extension ProfileController: EditProfileControllerDelegate {
     
     func controller(_ controller: EditProfileController, wantsToUpdate user: User) {
         controller.dismiss(animated: true, completion: nil)
-        self.user = user  //userが更新されるとdidSetでreloadされる。
+        self.user = user
+        self.collectionView.reloadData()
     }
 }
 

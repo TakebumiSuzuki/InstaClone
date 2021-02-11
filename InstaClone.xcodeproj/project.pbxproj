@@ -69,6 +69,8 @@
 		0C8919B925D41B190083383D /* ValidationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8919B825D41B190083383D /* ValidationServiceTests.swift */; };
 		0C8919BF25D44F350083383D /* RegistrationViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8919BE25D44F350083383D /* RegistrationViewModelTests.swift */; };
 		0C8919CC25D457630083383D /* RestPasswordViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8919C225D4564B0083383D /* RestPasswordViewModelTests.swift */; };
+		0C8919D225D52D820083383D /* ProfileHeaderViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8919D125D52D820083383D /* ProfileHeaderViewModelTests.swift */; };
+		0C8919D825D551050083383D /* PostViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8919D725D551050083383D /* PostViewModelTests.swift */; };
 		0C9B3BE225CEDF1200261667 /* LoginViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9B3BE125CEDF1200261667 /* LoginViewModelTests.swift */; };
 		0CA0E91625C6D33E00BDD123 /* CustomError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA0E91525C6D33E00BDD123 /* CustomError.swift */; };
 		0CA0E91A25C97AE400BDD123 /* TimestampService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA0E91925C97AE400BDD123 /* TimestampService.swift */; };
@@ -151,6 +153,8 @@
 		0C8919B825D41B190083383D /* ValidationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationServiceTests.swift; sourceTree = "<group>"; };
 		0C8919BE25D44F350083383D /* RegistrationViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegistrationViewModelTests.swift; sourceTree = "<group>"; };
 		0C8919C225D4564B0083383D /* RestPasswordViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestPasswordViewModelTests.swift; sourceTree = "<group>"; };
+		0C8919D125D52D820083383D /* ProfileHeaderViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileHeaderViewModelTests.swift; sourceTree = "<group>"; };
+		0C8919D725D551050083383D /* PostViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostViewModelTests.swift; sourceTree = "<group>"; };
 		0C9B3BCD25CEDE0100261667 /* InstaCloneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InstaCloneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C9B3BD125CEDE0200261667 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0C9B3BE125CEDF1200261667 /* LoginViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModelTests.swift; sourceTree = "<group>"; };
@@ -388,6 +392,8 @@
 		0C9B3BCE25CEDE0200261667 /* InstaCloneTests */ = {
 			isa = PBXGroup;
 			children = (
+				0C8919D725D551050083383D /* PostViewModelTests.swift */,
+				0C8919D125D52D820083383D /* ProfileHeaderViewModelTests.swift */,
 				0C8919B825D41B190083383D /* ValidationServiceTests.swift */,
 				0C9B3BE125CEDF1200261667 /* LoginViewModelTests.swift */,
 				0C8919C225D4564B0083383D /* RestPasswordViewModelTests.swift */,
@@ -667,7 +673,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0C8919D825D551050083383D /* PostViewModelTests.swift in Sources */,
 				0C8919CC25D457630083383D /* RestPasswordViewModelTests.swift in Sources */,
+				0C8919D225D52D820083383D /* ProfileHeaderViewModelTests.swift in Sources */,
 				0C8919B925D41B190083383D /* ValidationServiceTests.swift in Sources */,
 				0C9B3BE225CEDF1200261667 /* LoginViewModelTests.swift in Sources */,
 				0C8919BF25D44F350083383D /* RegistrationViewModelTests.swift in Sources */,

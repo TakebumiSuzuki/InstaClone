@@ -81,14 +81,13 @@ class ResetPasswordController: UIViewController {
         
         emailTextField.text = email //ここからの３行は前ページから引き継いだemailをそのまま表示させるため
         viewModel.email = email
-        updateButtonColor()
+        updateButtonState()
         
         emailTextField.delegate = self
         emailTextField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
         
         view.addSubview(backButton)
-        backButton.anchor(top: view.safeAreaLayoutGuide.topAnchor, left: view.leftAnchor,
-                          paddingTop: 16, paddingLeft: 16)
+        backButton.anchor(top: view.safeAreaLayoutGuide.topAnchor, left: view.leftAnchor, paddingTop: 16, paddingLeft: 16)
         
         view.addSubview(iconImageView)
         iconImageView.centerX(inView: view)
@@ -134,10 +133,10 @@ class ResetPasswordController: UIViewController {
         if sender == emailTextField {
             viewModel.email = sender.text
         }
-        updateButtonColor()
+        updateButtonState()
     }
     
-    private func updateButtonColor() {
+    private func updateButtonState() {
         resetPasswordButton.backgroundColor = viewModel.buttonBackgroundColor
         resetPasswordButton.setTitleColor(viewModel.buttonTitleColor, for: .normal)
         resetPasswordButton.isEnabled = viewModel.formIsValid

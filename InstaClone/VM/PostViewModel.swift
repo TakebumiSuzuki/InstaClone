@@ -18,7 +18,6 @@ struct PostViewModel {
     }
     
     
-    //以下の変数は全てpostオブジェクトからのcomputed propertyである事に気づくべき
     var username: String { return post.ownerUsername }
     var userProfileImageUrl: URL? { return URL(string: post.ownerImageUrl) }
     var imageUrl: URL? { return URL(string: post.imageUrl) }

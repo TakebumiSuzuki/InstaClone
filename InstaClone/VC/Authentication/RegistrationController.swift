@@ -77,7 +77,7 @@ class RegistrationController: UIViewController {
     private let backgroundImage: UIImageView = {
        let iv = UIImageView()
         iv.contentMode = .scaleAspectFill
-        iv.image = UIImage(named: "splashScreenBackground")
+        iv.image = UIImage(named: "pink2")
         return iv
     }()
     // MARK: - Lifecycle
@@ -234,10 +234,10 @@ class RegistrationController: UIViewController {
         } else {
             viewModel.username = sender.text
         }
-        updateButtonColor()  //毎回文字が打ち込まれるたびにこれが実行され、buttonの色を変えるかどうか判断する。
+        updateButtonState()  //毎回文字が打ち込まれるたびにこれが実行され、buttonの色を変えるかどうか判断する。
     }
     
-    private func updateButtonColor() {
+    private func updateButtonState() {
         signUpButton.backgroundColor = viewModel.buttonBackgroundColor
         signUpButton.setTitleColor(viewModel.buttonTitleColor, for: .normal)
         signUpButton.isEnabled = viewModel.formIsValid

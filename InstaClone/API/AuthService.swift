@@ -23,49 +23,55 @@ struct AuthCredentials {
 struct AuthService {
     
     ///UIImageをstoreに保存、Authでアカウントを作成、その他の情報をFirestoreに保存。
-    static func registerUser(withCredential credentials: AuthCredentials, completion: @escaping(Error?) -> Void) {
+    static func registerUser(withCredential credentials: AuthCredentials, completion: @escaping (Error?) -> Void) {
         
         ImageUploader.uploadImage(image: credentials.profileImage, imageKind: .profileImage) { (result) in
-            
             switch result{
             case .failure(let error):
                 completion(error)
-                
             case .success(let imageUrl):
-                Auth.auth().createUser(withEmail: credentials.email, password: credentials.password) { (result, error) in
-                    if let error = error {
-                        print("DEBUG: Failed to register user \(error.localizedDescription)")
-                        completion(error)
-                        return
-                    }
-                    
-                    guard let uid = result?.user.uid else {
-                        completion(CustomError.dataHandling)
-                        return
-                    }
-                    var data: [String: Any] = ["email": credentials.email,
-                                               "fullname": credentials.fullname,
-                                               "profileImageUrl": imageUrl,
-                                               "uid": uid,
-                                               "username": credentials.username]
-                    
-                    if let fcmToken = Messaging.messaging().fcmToken {
-                        data["fcmToken"] = fcmToken
-                    }
-                    COLLECTION_USERS.document(uid).setData(data, completion: completion)
+                AuthService.createUser(credentials: credentials, imageUrl: imageUrl) { (error) in
+                    completion(error)
                 }
             }
         }
     }
     
+    private static func createUser(credentials: AuthCredentials, imageUrl: String, completion: @escaping (Error?) -> Void){
+        
+        Auth.auth().createUser(withEmail: credentials.email, password: credentials.password) { (result, error) in
+            if let error = error {
+                print("DEBUG: Failed to register user: \(error.localizedDescription)")
+                completion(error)
+                return
+            }
+            guard let uid = result?.user.uid else { completion(CustomError.dataHandling); return }
+            
+            let data: [String: Any] = ["email": credentials.email,
+                                       "fullname": credentials.fullname,
+                                       "profileImageUrl": imageUrl,
+                                       "uid": uid,
+                                       "username": credentials.username]
+            
+//            if let fcmToken = Messaging.messaging().fcmToken {
+//                data["fcmToken"] = fcmToken
+//            }
+            COLLECTION_USERS.document(uid).setData(data) { (error) in
+                if let error = error{
+                    print("DEBUG: Failed to save user data to Firestore: \(error.localizedDescription)")
+                    completion(error)
+                }
+                completion(nil)
+            }
+        }
+    }
     
-    //AuthDataResultCallback型については不明。
+    
     static func logUserIn(withEmail email: String, password: String, completion: AuthDataResultCallback?) {
         Auth.auth().signIn(withEmail: email, password: password, completion: completion)
     }
     
     
-    ///emailを引数に、authのsendPasswordResetメソッドでリセットをかける。そこでのcompletionをそのまま引き継ぐ
     static func resetPassword(withEmail email: String, completion: SendPasswordResetCallback?) {
         Auth.auth().sendPasswordReset(withEmail: email, completion: completion)
     }

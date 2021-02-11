@@ -132,17 +132,18 @@ class LoginController: UIViewController {
         showLoader(true)
         AuthService.logUserIn(withEmail: email, password: password) { (result, error) in
             if let error = error {
-                print("DEBUG: Failed to log user in \(error.localizedDescription)")
-                self.showSimpleAlert(title: "", message: error.localizedDescription, actionTitle: "ok")
                 self.showLoader(false)
+                print("DEBUG: Failed to log user in: \(error.localizedDescription)")
+                self.showSimpleAlert(title: "", message: error.localizedDescription, actionTitle: "ok")
                 return
             }
+            self.showLoader(false)
             self.delegate?.authenticationDidComplete()
         }
     }
     
     @objc private func handleShowResetPassword() {
-        guard let email = emailTextField.text else{ return } //リセットページに遷移してもここに入力済みのemailがそのまま表示されるように
+        guard let email = emailTextField.text else{ return } //リセットページに遷移してもそこに入力済みのemailがそのまま表示されるように
         let vc = ResetPasswordController(email: email)
         vc.delegate = self  //一番下のdelegate methodの為の設定。ResetPassControllerをpopしてalert表示する。
         navigationController?.pushViewController(vc, animated: true)
@@ -161,10 +162,10 @@ class LoginController: UIViewController {
         } else {
             viewModel.password = sender.text
         }
-        updateButtonColor()
+        updateButtonState()
     }
     
-    private func updateButtonColor() {
+    private func updateButtonState() {
         loginButton.backgroundColor = viewModel.buttonBackgroundColor
         loginButton.setTitleColor(viewModel.buttonTitleColor, for: .normal)
         loginButton.isEnabled = viewModel.formIsValid
