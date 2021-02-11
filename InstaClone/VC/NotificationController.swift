@@ -47,12 +47,12 @@ class NotificationsController: UITableViewController {
     
     // MARK: - API
     
-    func fetchNotifications() {
+    func fetchNotifications() {       //paginationは付けずに、単純にfetchの数を30個に限定している。
         NotificationService.fetchNotifications { result in
             switch result{
             case .failure(let error):
                 self.refresher.endRefreshing()
-                print("DEBUG: Error fetching notifications.\(error)")
+                print("DEBUG: Error fetching notifications: \(error)")
             case .success(let notifications):
                 self.notifications = notifications  //APIからの返り値である右辺のnotificationsはmutateできないのでglobal変数にここでコピーしている。
                 self.checkIfUserIsFollowed()
@@ -72,12 +72,11 @@ class NotificationsController: UITableViewController {
                 switch result{
                 case .failure(let error):
                     group.leave()
-                    print("DEBUG: Error checking if user is follwed \(error.localizedDescription)")
+                    print("DEBUG: Error checking if user is follwed: \(error.localizedDescription)")
                 case .success(let isFollowed):
                     if let index = self.notifications.firstIndex(where: { $0.id == notification.id }) {
                         self.notifications[index].userIsFollowed = isFollowed
                         group.leave()
-                        self.refresher.endRefreshing()
                     }else{
                         group.leave()
                     }
@@ -123,7 +122,7 @@ extension NotificationsController {
         UserService.fetchUser(withUid: notifications[indexPath.row].uid) { (result) in
             switch result{
             case .failure(let error):
-                print("DEBUG: Error fetching User: \(error.localizedDescription)")
+                print("DEBUG: Error fetching User from notification: \(error.localizedDescription)")
                 
             case .success(let user):
                 let vc = ProfileController(user: user)
@@ -153,7 +152,12 @@ extension NotificationsController: NotificationCellDelegate {
 //                self.showSimpleAlert(title: "Network Error.Failed to Follow", message: "Please try later again.", actionTitle: "ok")
                 print("DEBUG: Error following process in Firestore. \(error.localizedDescription)")
             case .success(_):   //ここには"succeed"と書いたが入ったerrorが返ってくるが使わない。
-                NotificationService.uploadNotification(toUid: uid, fromUser: user, type: .follow)
+                NotificationService.uploadNotification(toUid: uid, fromUser: user, type: .follow) { (error) in
+                    if let error = error{
+                        print("DEBUG: Error sending follow notification in Notificaton Controller: \(error.localizedDescription)")
+                        
+                    }
+                }
             }
         }
     }

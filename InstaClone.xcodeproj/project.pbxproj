@@ -65,8 +65,11 @@
 		0C0C092B25C169DA006C79C5 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0C0C092A25C169DA006C79C5 /* GoogleService-Info.plist */; };
 		0C0C093025C1732F006C79C5 /* CustomButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0C092F25C1732F006C79C5 /* CustomButton.swift */; };
 		0C0C093525C18C11006C79C5 /* Billabong.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0C0C093425C18C11006C79C5 /* Billabong.ttf */; };
-		0C9B3BD025CEDE0200261667 /* InstaCloneTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9B3BCF25CEDE0200261667 /* InstaCloneTests.swift */; };
-		0C9B3BE225CEDF1200261667 /* RegistrationControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9B3BE125CEDF1200261667 /* RegistrationControllerTests.swift */; };
+		0C8919B125D3EB7C0083383D /* ValidationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8919B025D3EB7C0083383D /* ValidationService.swift */; };
+		0C8919B925D41B190083383D /* ValidationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8919B825D41B190083383D /* ValidationServiceTests.swift */; };
+		0C8919BF25D44F350083383D /* RegistrationViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8919BE25D44F350083383D /* RegistrationViewModelTests.swift */; };
+		0C8919CC25D457630083383D /* RestPasswordViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8919C225D4564B0083383D /* RestPasswordViewModelTests.swift */; };
+		0C9B3BE225CEDF1200261667 /* LoginViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9B3BE125CEDF1200261667 /* LoginViewModelTests.swift */; };
 		0CA0E91625C6D33E00BDD123 /* CustomError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA0E91525C6D33E00BDD123 /* CustomError.swift */; };
 		0CA0E91A25C97AE400BDD123 /* TimestampService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA0E91925C97AE400BDD123 /* TimestampService.swift */; };
 		4ACE9768C0A7F2172779C96B /* Pods_InstaClone.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F6AC4F6EA7832FD313E77B7 /* Pods_InstaClone.framework */; };
@@ -144,10 +147,13 @@
 		0C0C092A25C169DA006C79C5 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		0C0C092F25C1732F006C79C5 /* CustomButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomButton.swift; sourceTree = "<group>"; };
 		0C0C093425C18C11006C79C5 /* Billabong.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = Billabong.ttf; path = Billabong/Billabong.ttf; sourceTree = SOURCE_ROOT; };
+		0C8919B025D3EB7C0083383D /* ValidationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationService.swift; sourceTree = "<group>"; };
+		0C8919B825D41B190083383D /* ValidationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationServiceTests.swift; sourceTree = "<group>"; };
+		0C8919BE25D44F350083383D /* RegistrationViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegistrationViewModelTests.swift; sourceTree = "<group>"; };
+		0C8919C225D4564B0083383D /* RestPasswordViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestPasswordViewModelTests.swift; sourceTree = "<group>"; };
 		0C9B3BCD25CEDE0100261667 /* InstaCloneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InstaCloneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		0C9B3BCF25CEDE0200261667 /* InstaCloneTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstaCloneTests.swift; sourceTree = "<group>"; };
 		0C9B3BD125CEDE0200261667 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		0C9B3BE125CEDF1200261667 /* RegistrationControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegistrationControllerTests.swift; sourceTree = "<group>"; };
+		0C9B3BE125CEDF1200261667 /* LoginViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModelTests.swift; sourceTree = "<group>"; };
 		0CA0E91525C6D33E00BDD123 /* CustomError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomError.swift; sourceTree = "<group>"; };
 		0CA0E91925C97AE400BDD123 /* TimestampService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimestampService.swift; sourceTree = "<group>"; };
 		0EA93B66AE20CF3E0C85BFD6 /* Pods_InstaCloneTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_InstaCloneTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -351,6 +357,7 @@
 		0C0C08F125C0956E006C79C5 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				0C8919B025D3EB7C0083383D /* ValidationService.swift */,
 				0CA0E91525C6D33E00BDD123 /* CustomError.swift */,
 				0C0C08F225C09582006C79C5 /* Extensions.swift */,
 				0C0C08F925C09591006C79C5 /* InputTextView.swift */,
@@ -381,8 +388,10 @@
 		0C9B3BCE25CEDE0200261667 /* InstaCloneTests */ = {
 			isa = PBXGroup;
 			children = (
-				0C9B3BE125CEDF1200261667 /* RegistrationControllerTests.swift */,
-				0C9B3BCF25CEDE0200261667 /* InstaCloneTests.swift */,
+				0C8919B825D41B190083383D /* ValidationServiceTests.swift */,
+				0C9B3BE125CEDF1200261667 /* LoginViewModelTests.swift */,
+				0C8919C225D4564B0083383D /* RestPasswordViewModelTests.swift */,
+				0C8919BE25D44F350083383D /* RegistrationViewModelTests.swift */,
 				0C9B3BD125CEDE0200261667 /* Info.plist */,
 			);
 			path = InstaCloneTests;
@@ -602,6 +611,7 @@
 				0C0C088D25C093E8006C79C5 /* EditProfileViewModel.swift in Sources */,
 				0C0C087325C0935C006C79C5 /* ProfileHeader.swift in Sources */,
 				0C0C08B725C0949C006C79C5 /* UploadPostController.swift in Sources */,
+				0C8919B125D3EB7C0083383D /* ValidationService.swift in Sources */,
 				0C0C087025C09351006C79C5 /* ProfileCell.swift in Sources */,
 				0C0C08CC25C094E9006C79C5 /* FeedController.swift in Sources */,
 				0C0C084E25C092A5006C79C5 /* User.swift in Sources */,
@@ -657,8 +667,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0C9B3BE225CEDF1200261667 /* RegistrationControllerTests.swift in Sources */,
-				0C9B3BD025CEDE0200261667 /* InstaCloneTests.swift in Sources */,
+				0C8919CC25D457630083383D /* RestPasswordViewModelTests.swift in Sources */,
+				0C8919B925D41B190083383D /* ValidationServiceTests.swift in Sources */,
+				0C9B3BE225CEDF1200261667 /* LoginViewModelTests.swift in Sources */,
+				0C8919BF25D44F350083383D /* RegistrationViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

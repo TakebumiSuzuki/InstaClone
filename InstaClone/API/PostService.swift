@@ -70,6 +70,7 @@ class PostService {
     //searchControllerから。全ポスト取得。--------------------------------------------------------------------------------------
     static func fetchPosts(completion: @escaping (Result<[Post], Error>) -> Void) {
         COLLECTION_POSTS.order(by: "timestamp", descending: true).getDocuments { (snapshot, error) in
+            if let error = error{ completion(.failure(error)); return }
             guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
             
             let posts = documents.map({ Post(dictionary: $0.data()) })
@@ -77,15 +78,14 @@ class PostService {
         }
     }
     
-    //ProfileController下部のpost欄から。特定のuidのポストを時系列に。Paginateion必要かと。--------------------------------------------
+    //ProfileController下部のpost欄から。特定のuidのポストを時系列に。Paginateion必要かと。-------------------------------------------
     static func fetchPosts(forUser uid: String, completion: @escaping (Result<[Post], Error>) -> Void) {
         let query = COLLECTION_POSTS.whereField("ownerUid", isEqualTo: uid)
         
         query.getDocuments { (snapshot, error) in
-            if let error = error{
-                completion(.failure(error))
-            }
-            guard let documents = snapshot?.documents else { return }
+            if let error = error{ completion(.failure(error)); return }
+            guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
+            
             var posts = documents.map({ Post(dictionary: $0.data()) })
             posts.sort(by: { $0.timestamp.seconds > $1.timestamp.seconds })
             completion(.success(posts))
@@ -104,12 +104,12 @@ class PostService {
         }
     }
     
-    //SearchControllerから。---------------------------------------------------------------------------------------------------
+    //SearchController,HashtagPostControllerから。----------------------------------------------------------------------
     static func fetchPosts(forHashtag hashtag: String, completion: @escaping ([Post]) -> Void) {
         var posts = [Post]()
         COLLECTION_POSTS.whereField("hashtags", arrayContains: hashtag).getDocuments { (snapshot, error) in
             if let error = error {
-                print("DEBUG Error fetching hashtag posts \(error.localizedDescription)")
+                print("DEBUG: Error fetching hashtag posts: \(error.localizedDescription)")
             }
             guard let documents = snapshot?.documents else{ return }
             posts = []
@@ -120,7 +120,7 @@ class PostService {
         }
     }
     
-    //FeedControllerから。--------------------------------------------------------------------------------------------------
+    //FeedControllerから。-----------------------------------------------------------------------------------------------
     static func likePost(post: Post, completion: @escaping (Error?) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { completion(CustomError.currentUserNil); return }
         let group = DispatchGroup()

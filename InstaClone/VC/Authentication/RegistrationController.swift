@@ -15,15 +15,15 @@ class RegistrationController: UIViewController {
     private var profileImage: UIImage?
     
     //LoginControllerをまたいでMainTabControllerが代入されている。ログイン成功後の処理。
-    weak var delegate: AuthenticationDelegate?
-    var activeTextField : UITextField? = nil   //キーボード持ち上げで使う
+    weak var delegate: AuthenticationDelegate?  //AuthenticationDelegateプロトコルの宣言はLoginController.swfit上で行っている。
+    private var activeTextField : UITextField? = nil   //キーボード持ち上げで使う
     
-    private lazy var plusPhotoButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setImage(#imageLiteral(resourceName: "plus_photo"), for: .normal)
-        button.tintColor = .white
-        button.addTarget(self, action: #selector(handleProfilePhotoSelect), for: .touchUpInside)
-        return button
+    private lazy var photoButton: UIButton = {
+        let bn = UIButton(type: .system)
+        bn.setImage(#imageLiteral(resourceName: "plus_photo"), for: .normal)
+        bn.tintColor = .white
+        bn.addTarget(self, action: #selector(handleProfilePhotoSelect), for: .touchUpInside)
+        return bn
     }()
     
     private let emailTextField: CustomTextField = {    //設定行数を少なくするために作ったサブクラス
@@ -39,7 +39,7 @@ class RegistrationController: UIViewController {
         let tf = CustomTextField(placeholder: "Password")
         tf.textContentType = .password
         tf.isSecureTextEntry = true
-        tf.disableAutoFill()   //iOSでStrongPasswordと出てしまうエラーを防ぐためのextensionを書いた。
+        tf.disableAutoFill()   //iOSでStrongPasswordと出てしまうエラーを防ぐためだけのextensionを書いた。
         tf.returnKeyType = .next
         return tf
     }()
@@ -61,20 +61,25 @@ class RegistrationController: UIViewController {
     }()
         
     private lazy var signUpButton: CustomButton = {
-        let button = CustomButton(type: .system)
-        button.setUp(title: "Sign Up")
-        button.addTarget(self, action: #selector(handleSignUp), for: .touchUpInside)
-        return button
+        let bn = CustomButton(type: .system)
+        bn.setUp(title: "Sign Up")
+        bn.addTarget(self, action: #selector(handleSignUp), for: .touchUpInside)
+        return bn
     }()
     
     private lazy var alreadyHaveAccountButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.attributedTitle(firstPart: "Already have an account?", secondPart: "Log In")
-        button.addTarget(self, action: #selector(handleShowLogin), for: .touchUpInside)
-        return button
+        let bn = UIButton(type: .system)
+        bn.attributedTitle(firstPart: "Already have an account?", secondPart: "Log In")
+        bn.addTarget(self, action: #selector(handleShowLogin), for: .touchUpInside)
+        return bn
     }()
     
-    
+    private let backgroundImage: UIImageView = {
+       let iv = UIImageView()
+        iv.contentMode = .scaleAspectFill
+        iv.image = UIImage(named: "splashScreenBackground")
+        return iv
+    }()
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
@@ -89,19 +94,22 @@ class RegistrationController: UIViewController {
     }
     
     deinit {
-        print("Debug: Registration Controller being deinit")
+        print("--------------Registration Controller being DEINITIALIZED-----------------")
     }
     
     // MARK: - Helpers
     
     private func configureUI() {
+
+//        configureGradientLayer()   //UIViewのextensionで定義しているmethod
         
-        configureGradientLayer()   //UIViewのextensionで定義しているmethod
+        view.addSubview(backgroundImage)
+        backgroundImage.fillSuperview()
         
-        view.addSubview(plusPhotoButton)
-        plusPhotoButton.centerX(inView: view)
-        plusPhotoButton.setDimensions(height: 140, width: 140)
-        plusPhotoButton.anchor(top: view.safeAreaLayoutGuide.topAnchor, paddingTop: 32)
+        view.addSubview(photoButton)
+        photoButton.centerX(inView: view)
+        photoButton.setDimensions(height: 140, width: 140)
+        photoButton.anchor(top: view.safeAreaLayoutGuide.topAnchor, paddingTop: 32)
         
         let stack = UIStackView(arrangedSubviews: [emailTextField, passwordTextField,
                                                    fullnameTextField, usernameTextField,
@@ -110,7 +118,7 @@ class RegistrationController: UIViewController {
         stack.spacing = 20
         
         view.addSubview(stack)
-        stack.anchor(top: plusPhotoButton.bottomAnchor, left: view.leftAnchor,
+        stack.anchor(top: photoButton.bottomAnchor, left: view.leftAnchor,
                      right: view.rightAnchor, paddingTop: 32, paddingLeft: 32, paddingRight: 32)
         
         view.addSubview(alreadyHaveAccountButton)
@@ -132,7 +140,7 @@ class RegistrationController: UIViewController {
         usernameTextField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
     }
     
-    private func setupKeyboardNotification(){
+    private func setupKeyboardNotification(){   //システムが、textViewがfirstResponderになると自動的にpostするnotification
         
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(notification:)), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(notification:)), name: UIResponder.keyboardWillHideNotification, object: nil)
@@ -163,32 +171,30 @@ class RegistrationController: UIViewController {
     
     // MARK: - Actions
     
-    @objc func handleSignUp() {  //問題点としてAuthのパスワードバリデーションは6文字以上という点だけでspace６回でも通ってしまう。
+    @objc private func handleSignUp() {  //問題点としてAuthのパスワードバリデーションは6文字以上という点だけでspace６回でも通ってしまう。
         
-        guard let email = emailTextField.text else { return }
-        guard let password = passwordTextField.text else { return }
-        guard let rawFullname = fullnameTextField.text else { return }
-        let fullname = rawFullname.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let rawUsername = usernameTextField.text?.lowercased() else { return }
-        let username = rawUsername.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard email.isValidEmail() else{
-            showSimpleAlert(title: "Email isn't in correct format.", message: "", actionTitle: "ok")
+        do{
+            let email = try ValidationService.validateEmail(email: emailTextField.text)
+            let password = try ValidationService.validatePassword(password: passwordTextField.text)
+            let fullname = try ValidationService.validateFullname(fullname: fullnameTextField.text)
+            let username = try ValidationService.validateUsername(username: usernameTextField.text)
+            let profileImage = try ValidationService.validateProfileImage(profileImage: self.profileImage)
+            
+            //以下のようにわざわざAuthCredentialsストラクトを別に作ってオブジェクト化する手続きをふむ必要はない。
+             let credentials = AuthCredentials(email: email, password: password,
+                                               fullname: fullname, username: username,
+                                               profileImage: profileImage)
+             createUserAccount(credentials: credentials)
+            
+        }catch ValidationError.invalidEmail{
+            showSimpleAlert(title: "Email isn't in correct format.", message: "", actionTitle: "ok"); return
+        }catch ValidationError.passwordLessThan6Charactors{
+            showSimpleAlert(title: "Password needs at least 6 characters.", message: "", actionTitle: "ok"); return
+        }catch ValidationError.profileImageNil{
+            showSimpleAlert(title: "Please choose your profile photo.", message: "", actionTitle: "ok"); return
+        }catch{
             return
         }
-        guard password.count >= 6 else{
-            showSimpleAlert(title: "Password needs at least 6 characters.", message: "", actionTitle: "ok")
-            return
-        }
-        guard let profileImage = profileImage else {
-            showSimpleAlert(title: "Please choose your profile photo.", message: "", actionTitle: "ok")
-            return
-        }
-        //以下のようにわざわざAuthCredentialsストラクトを別に作ってオブジェクト化する手続きをふむ必要はない。
-        let credentials = AuthCredentials(email: email, password: password,
-                                          fullname: fullname, username: username,
-                                          profileImage: profileImage)
-        createUserAccount(credentials: credentials)
     }
     
     private func createUserAccount(credentials: AuthCredentials){
@@ -196,16 +202,17 @@ class RegistrationController: UIViewController {
         showLoader(true)
         AuthService.registerUser(withCredential: credentials) { error in
             if let error = error {
-                print("DEBUG: Failed to register user \(error.localizedDescription)")
-                self.showSimpleAlert(title: error.localizedDescription, message: "", actionTitle: "ok")
                 self.showLoader(false)
+                print("DEBUG: Failed to register user: \(error.localizedDescription)")
+                self.showSimpleAlert(title: error.localizedDescription, message: "", actionTitle: "ok")
                 return
             }
+            self.showLoader(false)
             self.delegate?.authenticationDidComplete()
         }
     }
     
-    @objc func handleProfilePhotoSelect() {
+    @objc private func handleProfilePhotoSelect() {
         let picker = UIImagePickerController()
         picker.delegate = self
         picker.allowsEditing = true
@@ -213,13 +220,11 @@ class RegistrationController: UIViewController {
         present(picker, animated: true, completion: nil)
     }
     
-    
-    @objc func handleShowLogin() {  //ログイン画面に戻る
+    @objc private func handleShowLogin() {  //ログイン画面に戻る
         navigationController?.popViewController(animated: true)
     }
     
-    
-    @objc func textDidChange(sender: UITextField) {  //入力状況をviewModelに送って、そこでUI論理計算を行う
+    @objc private func textDidChange(sender: UITextField) {  //入力状況をviewModelに送って、そこでUI論理計算を行う
         if sender == emailTextField {
             viewModel.email = sender.text
         } else if sender == passwordTextField {
@@ -244,7 +249,7 @@ class RegistrationController: UIViewController {
 
 extension RegistrationController: UITextFieldDelegate{
     
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {  //キーボードのnextボタンを押した時の挙動
         if textField == emailTextField {
             passwordTextField.becomeFirstResponder()
         } else if textField == passwordTextField {
@@ -272,17 +277,17 @@ extension RegistrationController: UIImagePickerControllerDelegate, UINavigationC
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         
-        guard let selectedImage = info[.editedImage] as? UIImage else { return }
-        profileImage = selectedImage  //global変数のprofileImageに格納するのは、サインインでAPIアクセスしてセーブするから。
+        guard let selectedImage = info[.editedImage] as? UIImage else { print("Error getting UIImage from ImagePicker"); return }
+        profileImage = selectedImage  //ここでglobal変数のprofileImageに格納するのは、サインインでAPIアクセスしてfirestorageに保存するから。
         
-        plusPhotoButton.imageView?.contentMode = .scaleAspectFill
-        plusPhotoButton.layer.cornerRadius = plusPhotoButton.frame.width / 2
-        plusPhotoButton.clipsToBounds = true
-        //UIViewにおけるclipToBoundsとCALayerにおけるmasksToBoundsはほぼ同等。上でclipToBoundsを設定しているので、これはなくても良い。
+        photoButton.imageView?.contentMode = .scaleAspectFill
+        photoButton.layer.cornerRadius = photoButton.frame.width / 2
+        photoButton.clipsToBounds = true
+        //UIViewにおけるclipToBoundsとCALayerにおけるmasksToBoundsはほぼ同等。上でclipToBoundsを設定しているので、これはなくても良いか。
 //        plusPhotoButton.layer.masksToBounds = true
-        plusPhotoButton.layer.borderColor = UIColor.white.cgColor
-        plusPhotoButton.layer.borderWidth = 1
-        plusPhotoButton.setImage(selectedImage.withRenderingMode(.alwaysOriginal), for: .normal)
+        photoButton.layer.borderColor = UIColor.white.cgColor
+        photoButton.layer.borderWidth = 1
+        photoButton.setImage(selectedImage.withRenderingMode(.alwaysOriginal), for: .normal)
         //塗り潰されるので.alwaysOriginalにしている。
         
         self.dismiss(animated: true, completion: nil)

@@ -64,6 +64,9 @@ class NotificationCell: UITableViewCell {
         return button
     }()
     
+    var infoConstraint: NSLayoutConstraint!
+    var postImageConstraint: NSLayoutConstraint!
+    
     // MARK: - Lifecycle
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -88,7 +91,8 @@ class NotificationCell: UITableViewCell {
         contentView.addSubview(infoLabel)
         infoLabel.centerY(inView: profileImageView,
                           leftAnchor: profileImageView.rightAnchor, paddingLeft: 8)
-        infoLabel.anchor(right: followButton.leftAnchor, paddingRight: 4)  //ここの右端のconstraintはdebugが必要になるかと。。
+        infoConstraint = infoLabel.rightAnchor.constraint(equalTo: followButton.leftAnchor, constant: -4)
+        postImageConstraint = infoLabel.rightAnchor.constraint(equalTo: postImageView.leftAnchor, constant: -4)
     }
     
     required init?(coder: NSCoder) {
@@ -129,5 +133,14 @@ class NotificationCell: UITableViewCell {
         followButton.setTitle(viewModel.followButtonText, for: .normal)
         followButton.backgroundColor = viewModel.followButtonBackgroundColor
         followButton.setTitleColor(viewModel.followButtonTextColor, for: .normal)
+        
+        if followButton.isHidden{
+            postImageConstraint.isActive = true
+            infoConstraint.isActive = false
+        }
+        if postImageView.isHidden{
+            infoConstraint.isActive = true
+            postImageConstraint.isActive = false
+        }
     }
 }

@@ -10,9 +10,10 @@ import Firebase
 
 typealias FirestoreCompletion = (Error?) -> Void
 
+
 struct UserService {
     
-    //profileController、feedController、notificationControllerから。-----------------------------------------------------
+    //profileController,feedController,notificationController,SearchConrollerから。----------------------------------------
     static func fetchUser(withUid uid: String, completion: @escaping (Result<User, Error>) -> Void) {
         
         COLLECTION_USERS.document(uid).getDocument { snapshot, error in
@@ -24,7 +25,7 @@ struct UserService {
         }
     }
     
-    //FeedControllerから。----------------------------------------------------------------------------------------------
+    //FeedControllerから。-------------------------------------------------------------------------------------------------
     static func fetchUser(withUsername username: String, completion: @escaping (Result<User, Error>) -> Void) {
         
         COLLECTION_USERS.whereField("username", isEqualTo: username).getDocuments { snapshot, error in
@@ -37,11 +38,12 @@ struct UserService {
         }
     }
     
-    ///指定されたコレクションの中に保存されている全てのuserのドキュメントID(UID)から[User]を作る
+    //SearchControllerから。指定されたref内の全userを取り出す。------------------------------------------------------------------
     private static func fetchUsers(fromCollection collection: CollectionReference, completion: @escaping(Result<[User], Error>) -> Void) {
         
         var users = [User]()
-        collection.getDocuments { snapshot, _ in
+        collection.getDocuments { snapshot, error in
+            if let error = error{ completion(.failure(error)); return}
             guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
             let group = DispatchGroup()
             
@@ -64,9 +66,10 @@ struct UserService {
     }
     
     
-    //指定されたconfigEnumに従い条件分岐して[User]を返す----------------------------------------------------------------
+    //指定されたconfigEnumに従い条件分岐して[User]を返す。SearchControllerから。----------------------------------------------
     static func fetchUsers(forConfig config: UserFilterConfig, completion: @escaping (Result<[User], Error>) -> Void) {
         var ref: CollectionReference?
+        
         switch config {
         case .all:  //全ユーザー取得。
             ref = nil

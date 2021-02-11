@@ -212,9 +212,11 @@ extension ProfileController: ProfileHeaderDelegate {
             profileHeader.configure()
             UserService.follow(uid: user.uid) { error in
                 
-                NotificationService.uploadNotification(toUid: user.uid,
-                                                       fromUser: currentUser,
-                                                       type: .follow)
+                NotificationService.uploadNotification(toUid: user.uid, fromUser: currentUser, type: .follow) { (error) in
+                    if let error = error{
+                        print("DEBUG: Error sending following notification in ProfileHeaderDelegate: \(error.localizedDescription)")
+                    }
+                }
             }
         }
     }

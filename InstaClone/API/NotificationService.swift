@@ -9,11 +9,12 @@ import Firebase
 
 struct NotificationService {
     
-    //-----------------------------------------------------------------------------------------------------------------
-    static func uploadNotification(toUid uid: String, fromUser: User,
-                                   type: NotificationType, post: Post? = nil) {
-        guard let currentUid = Auth.auth().currentUser?.uid else { return }
-        guard uid != currentUid else { return }  //自分自身にはnotificationを送らないように。
+    //ProfileHeader(follow), NotificationController(follow), commentController(comment), FeedController(like)multi post,
+    //FeedController(like)single post の以上５箇所から呼ばれる。-------------------------------------------------------------
+    static func uploadNotification(toUid uid: String, fromUser: User, type: NotificationType, post: Post? = nil,
+                                   completion: @escaping FirestoreCompletion) {
+        guard let currentUid = Auth.auth().currentUser?.uid else { completion(CustomError.currentUserNil); return }
+        guard uid != currentUid else { return }  //自分自身にはnotificationを送らないように。エラーハンドリングする必要なし。
         
         //ここで以下のようなステップを踏む事でdocRef.documentIDというドキュメント自身のパス名文字列をアップロードできるようになる。
         let docRef = COLLECTION_NOTIFICATIONS.document(uid).collection("user-notifications").document()
@@ -30,11 +31,13 @@ struct NotificationService {
             data["postImageUrl"] = post.imageUrl
         }
         
-        docRef.setData(data)
+        docRef.setData(data, completion: completion)
     }
     
     
-    //profileController(unfollowした時)、NotificationControllerから。--------------------------------------------------------
+    
+    //profileController、NotificationControllerから(unfollowした時)。---------------------------------------------------------
+    //またFeedControlleeから(unlikeした時)。
     //かなりトリッキーで、相手のnotificationの中で自分から送られたものを全て取り出しnotificationオブジェクトに変換する。
     //それをforEachでしらみ潰しにフィルターをかけながら目的のnotificationオブジェクトを特定し、そのreferenceを使ってdelete()
     static func deleteNotification(toUid uid: String, type: NotificationType, postId: String? = nil) {
@@ -44,9 +47,9 @@ struct NotificationService {
             .whereField("uid", isEqualTo: currentUid).getDocuments { snapshot, _ in
                 snapshot?.documents.forEach({ document in
                     let notification = Notification(dictionary: document.data())
-                    guard notification.type == type else { return }
+                    guard notification.type == type else { return }      //typeが同じものだけをフィルター。
                     
-                    if postId != nil {
+                    if postId != nil {           //notificationの種類がlikeかcommentの時はpostIDが同じものだけをフィルター。
                         guard postId == notification.postId else { return }
                     }
                     
@@ -56,16 +59,17 @@ struct NotificationService {
     }
     
     
-    //-----------------------------------------------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------------------------------
     static func fetchNotifications(completion: @escaping (Result<[Notification], Error>) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { completion(.failure(CustomError.currentUserNil)); return }
         
         let query =  COLLECTION_NOTIFICATIONS.document(uid).collection("user-notifications")
-            .order(by: "timestamp", descending: true)
+            .order(by: "timestamp", descending: true).limit(to: 30)
        
         query.getDocuments { snapshot, error in
-            if let error = error { completion(.failure(error)) }
+            if let error = error { completion(.failure(error)); return }
             guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
+            
             let notifications = documents.map({ Notification(dictionary: $0.data()) })
             completion(.success(notifications))
         }

@@ -307,7 +307,12 @@ extension FeedController: FeedCellDelegate {
                 PostService.likePost(post: posts[row]) { error in  //APIアクセスで2箇所変更(カウンター、post内のuser-likes)
                     if let error = error{ print("Error liking post: \(error.localizedDescription)"); return }
                     
-                    NotificationService.uploadNotification(toUid: ownerUid, fromUser: user, type: .like, post: self.posts[row])
+                    NotificationService.uploadNotification(toUid: ownerUid, fromUser: user, type: .like,
+                                                           post: self.posts[row]) { (error) in
+                        if let error = error{
+                            print("DEBUG: Error sending like notification in FeedController: \(error.localizedDescription)")
+                        }
+                    }
                 }
             }
             
@@ -332,7 +337,12 @@ extension FeedController: FeedCellDelegate {
                 PostService.likePost(post: self.post!) { error in  //APIアクセスで2箇所変更(カウンター、post内のuser-likes)
                     if let error = error{ print("Error liking post: \(error.localizedDescription)"); return }
                     
-                    NotificationService.uploadNotification(toUid: ownerUid, fromUser: user, type: .like, post: self.self.post!)
+                    NotificationService.uploadNotification(toUid: ownerUid, fromUser: user, type: .like,
+                                                           post: self.self.post!) { (error) in
+                        if let error = error{
+                            print("DEBUG: Error sending like notification in FeedController for single post: \(error.localizedDescription)")
+                        }
+                    }
                 }
             }
         }

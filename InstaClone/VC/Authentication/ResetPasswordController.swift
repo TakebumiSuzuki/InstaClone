@@ -14,6 +14,15 @@ protocol ResetPasswordControllerDelegate: class {
 
 class ResetPasswordController: UIViewController {
     
+    init(email: String) {
+        super.init(nibName: nil, bundle: nil)
+        self.email = email
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     // MARK: - Properties
     
     private var viewModel = ResetPasswordViewModel()
@@ -61,12 +70,12 @@ class ResetPasswordController: UIViewController {
     }
     
     deinit {
-        print("Debug: Password Controller being deinit")
+        print("-----------------Password Controller being DEINITIALIZED----------------------")
     }
     
     // MARK: - Helpers
     
-    func configureUI() {
+    private func configureUI() {
         
         configureGradientLayer()
         
@@ -99,7 +108,7 @@ class ResetPasswordController: UIViewController {
     
     // MARK: - Actions
     
-    @objc func handleResetPassword() {
+    @objc private func handleResetPassword() {
         guard let email = emailTextField.text else { return }
         guard email.isValidEmail() else{
             showSimpleAlert(title: "Email isn't in correct format.", message: "", actionTitle: "ok")
@@ -117,11 +126,11 @@ class ResetPasswordController: UIViewController {
         }
     }
     
-    @objc func handleDismissal() {
+    @objc private func handleDismissal() {
         navigationController?.popViewController(animated: true)
     }
     
-    @objc func textDidChange(sender: UITextField) {
+    @objc private func textDidChange(sender: UITextField) {
         if sender == emailTextField {
             viewModel.email = sender.text
         }
@@ -140,9 +149,7 @@ class ResetPasswordController: UIViewController {
 extension ResetPasswordController: UITextFieldDelegate{
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        if textField == emailTextField {
-            view.endEditing(true)
-        }
+        view.endEditing(true)
         return true
     }
 }

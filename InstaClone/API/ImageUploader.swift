@@ -35,8 +35,6 @@ struct ImageUploader {
             completion(.failure(CustomError.dataHandling))
             return
         }
-        print(imageKind.quality)
-        print(imageKind.path)
         let filename = NSUUID().uuidString
         let ref = Storage.storage().reference(withPath: "\(imageKind.path)\(filename)")  //ファイル名はNSUUID()で作成
         

@@ -25,7 +25,7 @@ enum UserFilterConfig: Equatable {  //Equatableがあるとイコールが使え
     case followers(String)  //profileページのfollower押した時。Stringには自分のuidが入る
     case following(String)  //profileページのfollowing押した時。Stringには自分のuidが入る
     case likes(String)  //feedページのlike押した時。StringにはpostIDが入る
-    case messages(String)  //ConversationsControllerのshowNewMessageから。Stringには自分のuidが入る。
+    case messages(String)  //ConversationsControllerの右上、showNewMessageから。Stringには自分のuidが入る。
     case all  //tabからのアクセス初期画面。この時のみtableViewが隠れ、collectionViewが表示される。これ以外は全てtableViewのみ表示。
     
     var navigationItemTitle: String {  //navBar表示用
@@ -33,7 +33,7 @@ enum UserFilterConfig: Equatable {  //Equatableがあるとイコールが使え
         case .followers: return "Followers"
         case .following: return "Following"
         case .likes: return "Likes"
-        case .messages: return "New Messages" //以上4つの場合はsearchBarは表示されないし、する必要がない。
+        case .messages: return "New Messages"   //以上4つの場合はsearchBarは表示されないし、する必要がない。
         case .all: return "Search Posts & People"  //最初の画面は全ポスト表示。.messagesと.allの場合はuserは全登録者表示。
         }
     }
@@ -51,6 +51,7 @@ class SearchController: UIViewController {
     private var filteredUsers = [User]()
     private var posts = [Post]()  //tabをタップしての直接表示の初期画面のみで使われる
     private var filteredPosts = [Post]()
+    
     private let refresherTV = UIRefreshControl()
     private let refresherCV = UIRefreshControl()
     
@@ -58,6 +59,7 @@ class SearchController: UIViewController {
     
     lazy var tableView: UITableView = {
         let tb = UITableView()
+        //searchBarをresignFirstResponderする為。(delegateのdidSelectCellはこのページでは使わない。)
         tb.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(tableViewTouched))
         tb.addGestureRecognizer(tap)
@@ -104,31 +106,17 @@ class SearchController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        configureSearchController()
+        
         configureUI()
         fetchUsers()
         if config == .all{
+            configureSearchController()
             fetchPosts()
         }
     }
    
    
     // MARK: - Helpers
-    
-    func configureSearchController() {
-        if config == .all{
-            searchController.searchResultsUpdater = self  //デリゲートの設定のようなもの。UISearchResultsUpdatingプロトコル。検索ロジック。
-            searchController.searchBar.delegate = self   //ボタンの表示非表示などに対応する。UISearchBarDelegateプロトコル。
-            searchController.searchBar.placeholder = "Search with hashtag, name, or email"
-            searchController.searchBar.autocapitalizationType = .none
-            searchController.searchBar.autocorrectionType = .no
-            searchController.obscuresBackgroundDuringPresentation = false  //検索中に画面が暗くなって選択できないようになるので、ここはfalseで。
-            searchController.hidesNavigationBarDuringPresentation = false
-            navigationItem.searchController = searchController  //navigationItemに備わっているプロパティ。
-            navigationItem.hidesSearchBarWhenScrolling = false //下にスクロールするとsearchBarが上に消えるかどうか。
-            definesPresentationContext = true   //不明
-        }
-    }
     
     func configureUI() {
         view.backgroundColor = .white
@@ -140,12 +128,27 @@ class SearchController: UIViewController {
         
         view.addSubview(tableView)  //ページを開いた初期画面では、.all以外の時にはtableViewが、.allの時にはcollectionViewが表示される。
         tableView.fillSuperview()  //superViewの上下左右に貼り付けるextensionメソッド
-        tableView.isHidden = config == .all  //Equatableプロトコルのおかげで等式が使える。
+//        tableView.isHidden = config == .all  //必要ないかと。
         
         guard config == .all else { return }
+        tableView.isHidden = true    //Equatableプロトコルのおかげで等式が使える。
         view.addSubview(collectionView)
         collectionView.fillSuperview()
     }
+    
+    func configureSearchController() {
+        searchController.searchResultsUpdater = self  //デリゲートの設定のようなもの。UISearchResultsUpdatingプロトコル。検索ロジック。
+        searchController.searchBar.delegate = self   //ボタンの表示非表示などに対応する。UISearchBarDelegateプロトコル。
+        searchController.searchBar.placeholder = "Search with hashtag, name, or email"
+        searchController.searchBar.autocapitalizationType = .none
+        searchController.searchBar.autocorrectionType = .no
+        searchController.obscuresBackgroundDuringPresentation = false  //検索中に画面が暗くなって選択できないようになるので、ここはfalseで。
+        searchController.hidesNavigationBarDuringPresentation = false
+        navigationItem.searchController = searchController  //navigationItemに備わっているプロパティ。
+        navigationItem.hidesSearchBarWhenScrolling = false //下にスクロールするとsearchBarが上に消えるかどうか。
+        definesPresentationContext = true   //不明
+    }
+    
     
     //MARK: - Actions
     
@@ -171,11 +174,11 @@ class SearchController: UIViewController {
             case .failure(let error):
                 self.refresherTV.endRefreshing()
                 print("DEBUG: Error fetch users for tableView: \(error.localizedDescription)")
+                self.showSimpleAlert(title: "Couln't download users.Try again later.", message: "", actionTitle: "ok")
             case .success(let users):
                 self.refresherTV.endRefreshing()
                 self.users = users
                 self.tableView.reloadData()
-            
             }
         }
     }
@@ -186,7 +189,7 @@ class SearchController: UIViewController {
             case .failure(let error):
                 self.refresherCV.endRefreshing()
                 print("DEBUG: Error fetching all posts: \(error.localizedDescription)")
-                self.showSimpleAlert(title: "Couln't download post.Try again later.", message: "", actionTitle: "ok")
+                self.showSimpleAlert(title: "Couln't download posts.Try again later.", message: "", actionTitle: "ok")
             case .success(let posts):
                 self.refresherCV.endRefreshing()
                 self.posts = posts
@@ -198,9 +201,8 @@ class SearchController: UIViewController {
 
 // MARK: - UISearchResultsUpdating
 
-extension SearchController: UISearchResultsUpdating {
+extension SearchController: UISearchResultsUpdating {  //search機能は.allの時のみ。それ以外のモードではこのメソッドは使わない。
     
-    //search機能は.allの時のみ。それ以外のモードではこのメソッドは使わない。
     //searchBarがfirstResponderになった時と、毎回文字が入力された時に呼ばれる。つまりインクリメンタルサーチができる。
     func updateSearchResults(for searchController: UISearchController) {
         

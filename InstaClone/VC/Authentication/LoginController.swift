@@ -79,7 +79,7 @@ class LoginController: UIViewController {
     }
     
     deinit {
-        print("Debug: Login Controller being deinit")
+        print("------------------Login Controller being DEINITIALIZED-------------------")
     }
     
     // MARK: - Helpers
@@ -121,7 +121,7 @@ class LoginController: UIViewController {
     
     // MARK: - Actions
     
-    @objc func handleLogin() {
+    @objc private func handleLogin() {
         guard let email = emailTextField.text else { return }
         guard let password = passwordTextField.text else { return }
         guard email.isValidEmail() else{
@@ -141,21 +141,21 @@ class LoginController: UIViewController {
         }
     }
     
-    @objc func handleShowResetPassword() {
-        let vc = ResetPasswordController()
+    @objc private func handleShowResetPassword() {
+        guard let email = emailTextField.text else{ return } //リセットページに遷移してもここに入力済みのemailがそのまま表示されるように
+        let vc = ResetPasswordController(email: email)
         vc.delegate = self  //一番下のdelegate methodの為の設定。ResetPassControllerをpopしてalert表示する。
-        vc.email = emailTextField.text   //リセットページに遷移してもここに入力済みのemailがそのまま表示されるように
         navigationController?.pushViewController(vc, animated: true)
     }
     
-    @objc func handleShowSignUp() {
+    @objc private func handleShowSignUp() {
         let vc = RegistrationController()
         vc.delegate = delegate  //RegistrationControllerから自分をまたいでMainTabController上で実行される為
         navigationController?.pushViewController(vc, animated: true)
     }
     
     //viewModel側で、emailとpasswordが両方共に空でなければ色とisEnabldが変わるような仕組みを作っている。
-    @objc func textDidChange(sender: UITextField) {
+    @objc private func textDidChange(sender: UITextField) {
         if sender == emailTextField {
             viewModel.email = sender.text
         } else {

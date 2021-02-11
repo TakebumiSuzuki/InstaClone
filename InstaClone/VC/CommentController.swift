@@ -281,9 +281,12 @@ extension CommentController: CustomInputAccesoryViewDelegate {  //accessoryView�
                 return
             }
             inputView.clearInputText()
-            NotificationService.uploadNotification(toUid: self.post.ownerUid,
-                                                   fromUser: currentUser, type: .comment,
-                                                   post: self.post)
+            NotificationService.uploadNotification(toUid: self.post.ownerUid,fromUser: currentUser,
+                                                   type: .comment, post: self.post) { (error) in
+                if let error = error{
+                    print("DEBUG: Error sending comment notification in CommentController: \(error.localizedDescription)")
+                }
+            }
         }
     }   //現在コメントの削除機能は実装されていない。
     
