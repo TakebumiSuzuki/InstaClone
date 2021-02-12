@@ -83,6 +83,7 @@ class ConversationsController: UIViewController {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         let vc = SearchController(config: .messages(uid))
         vc.delegate = self
+        vc.fetchUsers()  //遷移先の情報をロードする
         let nav = UINavigationController(rootViewController: vc)
         present(nav, animated: true, completion: nil)
     }

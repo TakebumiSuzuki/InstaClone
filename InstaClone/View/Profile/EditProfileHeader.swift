@@ -8,7 +8,7 @@
 import UIKit
 
 protocol EditProfileHeaderDelegate: class {
-    func didTapChangeProfilePhoto()  //EditProfileControllerでImagePickerをpresentする
+    func didTapChangeProfilePhoto()  //写真がタップされた時に、EditProfileController上でImagePickerをpresentする
 }
 
 class EditProfileHeader: UIView {
@@ -16,7 +16,7 @@ class EditProfileHeader: UIView {
     // MARK: - Properties
     
     private let user: User
-    weak var delegate: EditProfileHeaderDelegate?
+    weak var delegate: EditProfileHeaderDelegate?   //EditProfileControllerが入る
     
     lazy var profileImageView: UIImageView = {
         let iv = UIImageView()

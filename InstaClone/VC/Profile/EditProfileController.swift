@@ -19,7 +19,7 @@ class EditProfileController: UITableViewController {
     
     // MARK: - Properties
     
-    private var user: User    //インスタンス化の際にProfileControllerのuserのリファレンスをそのまま引き継ぐ
+    private var user: User    //インスタンス化の際にProfileControllerのuserのリファレンスがパスされる
     weak var delegate: EditProfileControllerDelegate?  //ProfileControllerが入る
 
 
@@ -30,8 +30,8 @@ class EditProfileController: UITableViewController {
         didSet { headerView.profileImageView.image = selectedImage }
     }
     
-    private var userInfoChanged = false  //右上のSaveボタンのisEnabledを操作するため
-    private var imageChanged: Bool {   //右上のSaveボタンのisEnabledを操作するため
+    private var userInfoChanged = false  //SaveボタンのisEnabledを操作するため
+    private var imageChanged: Bool {     //SaveボタンのisEnabledを操作するため
         return selectedImage != nil
     }
     
@@ -58,12 +58,12 @@ class EditProfileController: UITableViewController {
     
     // MARK: - Helpers
     
-    func configureImagePicker() {
+    private func configureImagePicker() {
         imagePicker.delegate = self
         imagePicker.allowsEditing = true
     }
     
-    func configureNavigationBar() {
+    private func configureNavigationBar() {
         navigationItem.title = "Edit Profile"
         //下の2つはbarButtonSystemItemでも通常のtitleでもどちらもほぼ同じ。
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(handleCancel))
@@ -71,10 +71,10 @@ class EditProfileController: UITableViewController {
         navigationItem.rightBarButtonItem?.isEnabled = false
     }
     
-    func configureTableView() {
+    private func configureTableView() {
+        headerView.delegate = self
         tableView.tableHeaderView = headerView
         headerView.frame = CGRect(x: 0, y: 0, width: view.frame.width, height: 180)
-        headerView.delegate = self
         tableView.tableFooterView = UIView()
         tableView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(hideKeyboard)))
         tableView.rowHeight = 60
@@ -84,15 +84,15 @@ class EditProfileController: UITableViewController {
     
     // MARK: - Selectors
     
-    @objc func hideKeyboard() {  //UITapGestureから呼ばれる
+    @objc private func hideKeyboard() {  //UITapGestureから呼ばれる
       view.endEditing(true)
     }
     
-    @objc func handleCancel() {
+    @objc private func handleCancel() {
         dismiss(animated: true, completion: nil)
     }
     
-    @objc func handleSave() {
+    @objc private func handleSave() {
         view.endEditing(true)
         guard imageChanged || userInfoChanged else { return }
         updateUserData()
@@ -104,13 +104,13 @@ class EditProfileController: UITableViewController {
     private func updateUserData() {
         //両方の場合共に、過去のポスト、notification,commentに含まれる情報をアップデートする必要があるがまだ未実装。
         if imageChanged{
-            updateProfileImageAndName()
+            updateProfileImageThenNames()
         }else{
-            updateOnlyName()
+            updateNames()
         }
     }
     
-    private func updateProfileImageAndName() {
+    private func updateProfileImageThenNames() {
         guard let image = selectedImage else { return }
         
         //古いimageバケットを消去し、新たにimageをstorageに保存し、そのDLリンクまたはエラーを返す。
@@ -120,33 +120,15 @@ class EditProfileController: UITableViewController {
                 return
             }
             guard let profileImageUrl = profileImageUrl else { return }
-            self.user.profileImageUrl = profileImageUrl  //ここでローカルのuserオブジェクトに新しいimageURLを代入
+            self.user.profileImageUrl = profileImageUrl  //ローカルのuserオブジェクトに新しいimageURLを代入
             
-            self.setNewNamesToLocalUser()
-            //この段階でuserのname,fullname,imageURLは既に変更済み。ここでfirebaseに各種テキスト情報を記録
-            UserService.saveUserData(user: self.user) { (error) in
-                if let error = error {
-                    self.showSimpleAlert(title: "Error", message: error.localizedDescription, actionTitle: "ok")
-                    return
-                }
-            }
-            self.delegate?.controller(self, wantsToUpdate: self.user)
+            self.updateNames()
         }
     }
     
-    
-    private func updateOnlyName(){
-        setNewNamesToLocalUser()
-        UserService.saveUserData(user: user){ (error) in
-            if let error = error {
-                self.showSimpleAlert(title: "Error", message: error.localizedDescription, actionTitle: "ok")
-                return
-            }
-        }
-        delegate?.controller(self, wantsToUpdate: self.user)
-   }
-    
-    private func setNewNamesToLocalUser(){
+    private func updateNames(){
+        
+        //以下６行でローカルのuserオブジェクトのnameとusernameをアップデートする。
         let fullnameCell = tableView.cellForRow(at: IndexPath(row: 0, section: 0)) as? EditProfileCell
         guard let fullname = fullnameCell?.infoTextField.text else { return }
         user.fullname = fullname
@@ -154,7 +136,15 @@ class EditProfileController: UITableViewController {
         let usernameCell = tableView.cellForRow(at: IndexPath(row: 1, section: 0)) as? EditProfileCell
         guard let username = usernameCell?.infoTextField.text else { return }
         user.username = username
-    }
+        
+        UserService.saveUserData(user: user){ (error) in
+            if let error = error {
+                self.showSimpleAlert(title: "Error", message: error.localizedDescription, actionTitle: "ok")
+                return
+            }
+            self.delegate?.controller(self, wantsToUpdate: self.user)
+        }
+   }
 }
 
 

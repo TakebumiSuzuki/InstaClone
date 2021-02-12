@@ -375,8 +375,9 @@ extension SearchController: UserCellDelegate{
     //tableViewのcellをタップしたときは、.messageの場合のみチャットスタート、それ以外はProfileControllerがpushされる
     func userCell(_ cell: UserCell, wantsToShowUserProfile user: User) {
         guard let indexPath = tableView.indexPath(for: cell) else{ return }
+        guard let currentUid = Auth.auth().currentUser?.uid else { return }
         
-        if config == .messages(user.uid){  //uidは以下では使っていないが、これが正しくないと実行されない。
+        if config == .messages(currentUid){  //uidは以下では使っていないが、これが正しくないと実行されない。
             delegate?.controller(self, wantsToStartChatWith: users[indexPath.row])  //ConversationsControllerがdelegate
         } else {
             let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]

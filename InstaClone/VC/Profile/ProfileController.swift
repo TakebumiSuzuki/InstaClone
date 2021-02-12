@@ -22,7 +22,6 @@ class ProfileController: UICollectionViewController {
     // MARK: - Properties
     
     //userはアプリ起動時には自分のuserが入るが、使用中の経路により、他人のuserにもなりうる
-    //userをクラスにしたため、didSetはもはや作動しないので消しても良いかと。
     private var user: User
     private var posts = [Post]()
     private let refresher = UIRefreshControl()
@@ -80,7 +79,7 @@ class ProfileController: UICollectionViewController {
     }
     
     private func showEditProfileController() {  //自分のEditページを開く(これが呼ばれるのは自分自身のページを見ている場合のみ)
-        let vc = EditProfileController(user: user)  //このページが保持するuserをそのまま引き継がせる
+        let vc = EditProfileController(user: user)
         vc.delegate = self
         let nav = UINavigationController(rootViewController: vc)
         nav.modalPresentationStyle = .fullScreen
@@ -96,7 +95,8 @@ class ProfileController: UICollectionViewController {
     
     
     // MARK: - API
-    //これらのメソッドはuserとpostsをmutateする。
+    
+    //このメソッドはuserをmutateする。
     private func checkIfUserIsFollowed() {  //中央のボタンの表示(3種類ある)がどれになるかを決定するために必要
         UserService.checkIfUserIsFollowed(uid: user.uid) { (result) in
             switch result{
@@ -109,6 +109,7 @@ class ProfileController: UICollectionViewController {
         }
     }
     
+    //このメソッドはuserをmutateする。
     private func fetchUserStats() {
         UserService.fetchUserStats(uid: user.uid) { stats in  //もしエラーになった場合は数値は初期値0のままになる。
             self.user.stats = stats
@@ -180,24 +181,36 @@ extension ProfileController: UICollectionViewDelegateFlowLayout {
 }
 
 
+// MARK: - UICollectionViewDelegate
+
+extension ProfileController {
+    
+    override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let vc = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
+        vc.post = posts[indexPath.row]
+        navigationController?.pushViewController(vc, animated: true)
+    }
+}
+
 
 // MARK: - ProfileHeaderDelegate
 
 extension ProfileController: ProfileHeaderDelegate {
     
-    //followするかどうか、その場合のnotificationのFirebaseへのセーブ/消去、または自分の場合プロファイル画面を表示するロジック。ちょっと複雑
+    //followするかどうか、その場合のnotificationのFirebaseへのセーブ/消去、または自分の場合プロファイル画面を表示するロジック。
     func header(_ profileHeader: ProfileHeader, didTapActionButtonFor user: User) {
         
         guard let tab = tabBarController as? MainTabController else { return }
         guard let currentUser = tab.user else { return }  //tabbarからさかのぼって自分自身のuserオブジェクトをgetしている
         
-        if user.isCurrentUser {    //自分自身のプロフィール画面を見ている場合→自分のエディット画面
+        if user.isCurrentUser {    //自分自身のプロフィール画面を見ている場合→自分のエディット画面を表示
             showEditProfileController()
             
         } else if user.isFollowed {    //すでにフォローしている人のプロフィールを見ている場合→アンフォロー
             user.isFollowed = false
             user.stats.followers -= 1
-            profileHeader.configure()  //userはクラスオブジェクトなので一番上のdidSetは機能しなくなっている。代わりにこれでok。
+            profileHeader.configure()
+            
             UserService.unfollow(uid: user.uid) { (result) in
                 switch result{
                 case .failure(let error):
@@ -211,6 +224,7 @@ extension ProfileController: ProfileHeaderDelegate {
             user.isFollowed = true
             user.stats.followers += 1
             profileHeader.configure()
+            
             UserService.follow(uid: user.uid) { (result) in
                 switch result{
                 case .failure(let error):
@@ -239,17 +253,15 @@ extension ProfileController: ProfileHeaderDelegate {
         let nav = UINavigationController(rootViewController: vc)
         present(nav, animated: true, completion: nil)
     }
-}
-
-// MARK: - UICollectionViewDelegate
-
-extension ProfileController {
     
-    override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let vc = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
-        vc.post = posts[indexPath.row]
-        navigationController?.pushViewController(vc, animated: true)
+    func header(_ profileHeader: ProfileHeader, wantsToPresentChatWith user: User){
+        
+        let vc = ChatController(user: user)
+        let nav = UINavigationController(rootViewController: vc)
+        nav.title = "\(user.username)"
+        present(nav, animated: true, completion: nil)
     }
+    
 }
 
 
@@ -271,6 +283,7 @@ extension ProfileController: SearchControllerDelegate{
     func controller(_ controller: SearchController, wantsToStartChatWith user: User) {
     }
     
+    //follower,followingをタップしてserachControllerが表示された後、userをタップするとこの画面経由でその人のprofileControllerがpush。
     func controller(_ controller: SearchController, wantsToShowSelectedUser user: User) {
         dismiss(animated: true, completion: nil)
         let vc = ProfileController(user: user)

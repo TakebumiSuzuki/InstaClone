@@ -7,12 +7,14 @@
 
 import UIKit
 import SDWebImage
+import Firebase
 
 //以下の3つのプロトコルfuncはProfileControllerで実行される。一番上のdidTapのロジックが複雑。
 protocol ProfileHeaderDelegate: class {
     func header(_ profileHeader: ProfileHeader, didTapActionButtonFor user: User) //follow/unfollow/edit共通ボタン
     func header(_ profileHeader: ProfileHeader, wantsToViewFollowersFor user: User)
     func header(_ profileHeader: ProfileHeader, wantsToViewFollowingFor user: User)
+    func header(_ profileHeader: ProfileHeader, wantsToPresentChatWith user: User)
 }
 
 class ProfileHeader: UICollectionReusableView {
@@ -84,20 +86,15 @@ class ProfileHeader: UICollectionReusableView {
     private let gridButton: UIButton = {  //未搭載
         let button = UIButton(type: .system)
         button.setImage(#imageLiteral(resourceName: "grid"), for: .normal)
+        button.tintColor = UIColor(white: 0, alpha: 0.7)
         return button
     }()
     
-    private let listButton: UIButton = {  //未搭載
+    private lazy var chatButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setImage(#imageLiteral(resourceName: "list"), for: .normal)
-        button.tintColor = UIColor(white: 0, alpha: 0.2)
-        return button
-    }()
-    
-    private let bookmarkButton: UIButton = {  //未搭載
-        let button = UIButton(type: .system)
-        button.setImage(#imageLiteral(resourceName: "ribbon"), for: .normal)
-        button.tintColor = UIColor(white: 0, alpha: 0.2)
+        button.setImage(#imageLiteral(resourceName: "send2"), for: .normal)
+        button.tintColor = UIColor(white: 0, alpha: 0.7)
+        button.addTarget(self, action: #selector(didTapChatButton), for: .touchUpInside)
         return button
     }()
     
@@ -136,7 +133,7 @@ class ProfileHeader: UICollectionReusableView {
         let bottomDivider = UIView()
         bottomDivider.backgroundColor = .lightGray
         
-        let buttonStack = UIStackView(arrangedSubviews: [gridButton, listButton, bookmarkButton])
+        let buttonStack = UIStackView(arrangedSubviews: [gridButton, chatButton])
         buttonStack.distribution = .fillEqually
         
         addSubview(buttonStack)
@@ -169,11 +166,21 @@ class ProfileHeader: UICollectionReusableView {
         delegate?.header(self, wantsToViewFollowingFor: viewModel.user)
     }
     
+    @objc func didTapChatButton(){
+        guard let viewModel = viewModel else { return }
+        delegate?.header(self, wantsToPresentChatWith: viewModel.user)
+    }
+    
     // MARK: - Helpers
     
     func configure() {
         guard let viewModel = viewModel else { return }
-                
+         
+        if let currentUser = Auth.auth().currentUser?.uid, currentUser == viewModel.user.uid{
+            print("ok")
+            chatButton.isEnabled = false
+        }
+        
         nameLabel.text = viewModel.fullname
         profileImageView.sd_setImage(with: viewModel.profileImageUrl)
         

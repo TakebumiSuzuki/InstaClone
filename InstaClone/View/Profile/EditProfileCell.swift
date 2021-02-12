@@ -19,7 +19,7 @@ class EditProfileCell: UITableViewCell {
         didSet { configure() }
     }
     
-    weak var delegate: EditProfileCellDelegate?
+    weak var delegate: EditProfileCellDelegate?   //EditProfileControllerが入る。
     
     private let titleLabel: UILabel = {
         let label = UILabel()
@@ -27,7 +27,7 @@ class EditProfileCell: UITableViewCell {
         return label
     }()
     
-    lazy var infoTextField: UITextField = { //ここのaddTargetの.editingDidEndの部分は調べるべき
+    lazy var infoTextField: UITextField = {
         let tf = UITextField()
         tf.keyboardAppearance = .default
         tf.returnKeyType = .done
@@ -44,7 +44,7 @@ class EditProfileCell: UITableViewCell {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         
         selectionStyle = .none    //cell上をタップした時に灰色の選択色にならないように。
-        infoTextField.delegate = self
+        infoTextField.delegate = self  //一番下の、textFieldSholdReturnの為。
         
         contentView.addSubview(titleLabel)   //self.addSubviewと下のcontentView.addSubviewの違いを調べるべき
         titleLabel.widthAnchor.constraint(equalToConstant: 100).isActive = true
@@ -66,13 +66,14 @@ class EditProfileCell: UITableViewCell {
         
         titleLabel.text = viewModel.titleText
         infoTextField.text = viewModel.optionValue
+        //フルネームの行のみ頭文字を大文字にする為の設定
         infoTextField.autocapitalizationType = viewModel.option == .fullname ? .words : .none
     }
     
     // MARK: - Selectors
     
     @objc func handleUpdateUserInfo() {  //TextFieldが.editingDidEndになった時に呼ばれる
-        delegate?.updateUserInfo(self)   //selfとはcell自身。この引数が必要な理由はcell.viewModelが必要だから
+        delegate?.updateUserInfo(self)   //selfとはcell自身。この引数が必要な理由は実行先でcell.viewModelが必要だから
     }
     
 }
