@@ -6,7 +6,7 @@
 //
 
 import UIKit
-
+import Firebase
 //LoginController上で実行されるdelegate method。emailを送りましたとのalertを表示させる。
 protocol ResetPasswordControllerDelegate: class {
     func controllerDidSendResetPasswordLink(_ controller: ResetPasswordController)
@@ -115,7 +115,9 @@ class ResetPasswordController: UIViewController {
         }
         
         showLoader(true)
-        AuthService.resetPassword(withEmail: email) { error in
+        let auth = Auth.auth()
+        let authService = AuthService(client: auth)
+        authService.resetPassword(withEmail: email) { error in
             if let error = error {
                 self.showLoader(false)
                 self.showSimpleAlert(title: "Error", message: error.localizedDescription, actionTitle: "ok")

@@ -15,12 +15,11 @@ protocol EditProfileControllerDelegate: class {
 }
 
 //ユーザーネームなど変更時にキーボードが閉めるためのtouchBeginが働かなかったが、gestureで解決済。
-//このページのポイントはuserオブジェクトを前ページのProfileControllerからコピーでパスされ、また逆方向にコピーでパスするという事。
 class EditProfileController: UITableViewController {
     
     // MARK: - Properties
     
-    private var user: User    //インスタンス化の際にProfileControllerのuser structの"コピー"をそのまま引き継ぐ
+    private var user: User    //インスタンス化の際にProfileControllerのuserのリファレンスをそのまま引き継ぐ
     weak var delegate: EditProfileControllerDelegate?  //ProfileControllerが入る
 
 
@@ -54,7 +53,7 @@ class EditProfileController: UITableViewController {
         configureTableView()
     }
     deinit {
-        print("EditProfileController DEINITTING--------------------------------------------")
+        print("---------------------EditProfileController is being DEINITIALIZED-------------------")
     }
     
     // MARK: - Helpers
@@ -66,9 +65,9 @@ class EditProfileController: UITableViewController {
     
     func configureNavigationBar() {
         navigationItem.title = "Edit Profile"
+        //下の2つはbarButtonSystemItemでも通常のtitleでもどちらもほぼ同じ。
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(handleCancel))
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Save", style: .done, target: self, action: #selector(handleSave))
-        //barButtonSystemItemでも通常のtitleでもどちらもほぼ同じ。
         navigationItem.rightBarButtonItem?.isEnabled = false
     }
     
@@ -123,6 +122,7 @@ class EditProfileController: UITableViewController {
             guard let profileImageUrl = profileImageUrl else { return }
             self.user.profileImageUrl = profileImageUrl  //ここでローカルのuserオブジェクトに新しいimageURLを代入
             
+            self.setNewNamesToLocalUser()
             //この段階でuserのname,fullname,imageURLは既に変更済み。ここでfirebaseに各種テキスト情報を記録
             UserService.saveUserData(user: self.user) { (error) in
                 if let error = error {
@@ -130,20 +130,31 @@ class EditProfileController: UITableViewController {
                     return
                 }
             }
-            self.delegate?.controller(self, wantsToUpdate: self.user)  //アップデートされたuserを逆方向パス。
+            self.delegate?.controller(self, wantsToUpdate: self.user)
         }
     }
     
     
     private func updateOnlyName(){
+        setNewNamesToLocalUser()
         UserService.saveUserData(user: user){ (error) in
             if let error = error {
                 self.showSimpleAlert(title: "Error", message: error.localizedDescription, actionTitle: "ok")
                 return
             }
         }
-        delegate?.controller(self, wantsToUpdate: self.user)  //アップデートされたuserを逆方向パス。
+        delegate?.controller(self, wantsToUpdate: self.user)
    }
+    
+    private func setNewNamesToLocalUser(){
+        let fullnameCell = tableView.cellForRow(at: IndexPath(row: 0, section: 0)) as? EditProfileCell
+        guard let fullname = fullnameCell?.infoTextField.text else { return }
+        user.fullname = fullname
+        
+        let usernameCell = tableView.cellForRow(at: IndexPath(row: 1, section: 0)) as? EditProfileCell
+        guard let username = usernameCell?.infoTextField.text else { return }
+        user.username = username
+    }
 }
 
 
@@ -193,20 +204,8 @@ extension EditProfileController: UIImagePickerControllerDelegate, UINavigationCo
 extension EditProfileController: EditProfileCellDelegate {
     
     func updateUserInfo(_ cell: EditProfileCell) { //cell内のTextFieldが.editingDidChangedになった時に呼ばれる
-        guard let viewModel = cell.viewModel else { return }
         
         userInfoChanged = true
         navigationItem.rightBarButtonItem?.isEnabled = true
-        
-        //以下は本来ならSaveボタンがタップされた時にこのラインを書く方が自然だが、そうするとそこでまたdelegate設定が必要になるので、
-        //ここの段階でローカルなuserを更新してしまう事によりその手間を省いている。
-        switch viewModel.option {
-        case .fullname:
-            guard let fullname = cell.infoTextField.text else { return }
-            user.fullname = fullname
-        case .username:
-            guard let username = cell.infoTextField.text else { return }
-            user.username = username
-        }
     }
 }

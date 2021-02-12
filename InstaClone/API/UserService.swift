@@ -13,7 +13,7 @@ typealias FirestoreCompletion = (Error?) -> Void
 
 struct UserService {
     
-    //profileController,feedController,notificationController,SearchConrollerから。----------------------------------------
+    //profileController,feedController,notificationController,SearchConrollerから。--------------------------------------
     static func fetchUser(withUid uid: String, completion: @escaping (Result<User, Error>) -> Void) {
         
         COLLECTION_USERS.document(uid).getDocument { snapshot, error in
@@ -246,11 +246,11 @@ struct UserService {
     }
     
     
-    static func setUserFCMToken() {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
-        guard let fcmToken = Messaging.messaging().fcmToken else { return }
-
-        COLLECTION_USERS.document(uid).updateData(["fcmToken": fcmToken])
-    }
+//    static func setUserFCMToken() {
+//        guard let uid = Auth.auth().currentUser?.uid else { return }
+//        guard let fcmToken = Messaging.messaging().fcmToken else { return }
+//
+//        COLLECTION_USERS.document(uid).updateData(["fcmToken": fcmToken])
+//    }
 }
 

@@ -58,7 +58,6 @@ class EditProfileHeader: UIView {
         changePhotoButton.centerX(inView: self, topAnchor: profileImageView.bottomAnchor, paddingTop: 8)
         
         profileImageView.sd_setImage(with: URL(string: user.profileImageUrl))
-        
     }
     
     required init?(coder: NSCoder) {

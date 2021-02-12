@@ -11,11 +11,11 @@ private let cellIdentifier = "ProfileCell"
 private let headerIdentifier = "ProfileHeader"
 
 
-//画面上半分のheaderViewを表示させるため、ProfileHeaderViewModelを作り、自分がdelegateになる。
+//画面上半分のheaderViewではProfileHeaerVMとProfileHeaderViewが、画面下部のcellではPostVMとProfileCellが使われている。
+//headerView→ProfileHeaderViewModelを作り、自分がdelegateになる。
 //画面半分下のポストをタップすると、その単体のポストでFeedControllerをpush。各ポストのcellに対してPostViewModelを作る。
-//headerViewではProfileHeaerVMとProfileHeaderViewが、cellにはProfileCellとPostVMが使われている。
 //問題となるのはuserが自分の時→Tabbarに組み込まれるのでviewDidLoadは一回のみ。さらにdeinitされない。一方で、userが他人の時→別画面からpushされる
-//のでviewDidLoadとdeinitはその度に呼ばれる。これが論理混乱の元となっていたがviewWillAppear内でAPIコールする事で解決。
+//のでviewDidLoadとdeinitはその度に呼ばれる。これが論理混乱の元となっていた。が、viewWillAppear内でAPIコールする事で解決。
 
 class ProfileController: UICollectionViewController {
     
@@ -23,13 +23,8 @@ class ProfileController: UICollectionViewController {
     
     //userはアプリ起動時には自分のuserが入るが、使用中の経路により、他人のuserにもなりうる
     //userをクラスにしたため、didSetはもはや作動しないので消しても良いかと。
-    private var user: User {
-        didSet {
-            collectionView.reloadData()
-        }
-    }
+    private var user: User
     private var posts = [Post]()
-    
     private let refresher = UIRefreshControl()
     
     // MARK: - Lifecycle
@@ -58,7 +53,7 @@ class ProfileController: UICollectionViewController {
                 
             case .success(let user):
                 self.navigationItem.title = user.username
-                self.checkIfUserIsFollowed()  //APIアクセスをして自分がそのuserをフォローしているかを調べてuserオブジェクトを更新(Boolを代入する)。最後でreloadData()が実行される
+                self.checkIfUserIsFollowed()  //APIアクセスをして自分がそのuserをフォローしているかを調べてuserオブジェクトを更新。最後でreloadData()が実行される
                 self.fetchUserStats()  //APIアクセスをしてuserのstatsオブジェクトを生成して、userオブジェクトに代入する。最後でreloadData()が実行される
                 self.fetchPosts()  //APIアクセスをしてpost配列をget。最後でreloadData()が実行される
             }
@@ -66,7 +61,7 @@ class ProfileController: UICollectionViewController {
    }
     
     deinit {
-        print("---------------------Profilecontroller is being DEINITIALIZED-----------------------")
+        print("------------------Profilecontroller is being DEINITIALIZED--------------------")
     }
     
     
@@ -79,7 +74,6 @@ class ProfileController: UICollectionViewController {
         collectionView.register(ProfileHeader.self,
                                 forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
                                 withReuseIdentifier: headerIdentifier)
-        
         
         refresher.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
         collectionView.refreshControl = refresher
@@ -95,7 +89,7 @@ class ProfileController: UICollectionViewController {
 
     // MARK: - Actions
     
-    @objc private func handleRefresh() {  //checkIfUserIsFollowed()をここに含める必要はない。他ユーザーからの干渉はないので。
+    @objc private func handleRefresh() {  //checkIfUserIsFollowed()をここに含める必要はない。mutateされることはないので。
         fetchPosts()
         fetchUserStats()
     }
@@ -107,7 +101,7 @@ class ProfileController: UICollectionViewController {
         UserService.checkIfUserIsFollowed(uid: user.uid) { (result) in
             switch result{
             case .failure(let error):
-                print("DEBUG: Error cheking if user is followed: \(error)")
+                print("DEBUG: Error cheking if user is followed: \(error.localizedDescription)")
             case .success(let isFollowed):
                 self.user.isFollowed = isFollowed
                 self.collectionView.reloadData()
@@ -116,7 +110,7 @@ class ProfileController: UICollectionViewController {
     }
     
     private func fetchUserStats() {
-        UserService.fetchUserStats(uid: user.uid) { stats in  //errorになった数値は初期値0のまま。
+        UserService.fetchUserStats(uid: user.uid) { stats in  //もしエラーになった場合は数値は初期値0のままになる。
             self.user.stats = stats
             self.collectionView.reloadData()
         }
@@ -158,7 +152,7 @@ extension ProfileController {
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellIdentifier, for: indexPath) as! ProfileCell
-        cell.viewModel = PostViewModel(post: posts[indexPath.row])  //PostViewModelを流用している
+        cell.viewModel = PostViewModel(post: posts[indexPath.row])  //cellにはPostViewModelを流用している
         return cell
     }
 }
@@ -237,7 +231,6 @@ extension ProfileController: ProfileHeaderDelegate {
         vc.delegate = self
         let nav = UINavigationController(rootViewController: vc)
         present(nav, animated: true, completion: nil)
-//        navigationController?.pushViewController(vc, animated: true)
     }
     
     func header(_ profileHeader: ProfileHeader, wantsToViewFollowingFor user: User) {
@@ -245,7 +238,6 @@ extension ProfileController: ProfileHeaderDelegate {
         vc.delegate = self
         let nav = UINavigationController(rootViewController: vc)
         present(nav, animated: true, completion: nil)
-//        navigationController?.pushViewController(vc, animated: true)
     }
 }
 
@@ -275,6 +267,7 @@ extension ProfileController: EditProfileControllerDelegate {
 
 //MARK: - SearchControllerDelegate
 extension ProfileController: SearchControllerDelegate{
+    
     func controller(_ controller: SearchController, wantsToStartChatWith user: User) {
     }
     

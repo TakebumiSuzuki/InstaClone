@@ -6,7 +6,7 @@
 //
 
 import UIKit  //ログイン関係はAuthServiceで行うのでここにFirebaseをimportする必要はないという事
-
+import Firebase
 //MainTabController上で実行される。ログイン成功後に画面を閉じ、さらにUserオブジェクトをfetchして情報を新しいユーザーに切り替える為のメソッド。
 protocol AuthenticationDelegate: class {
     func authenticationDidComplete()
@@ -130,7 +130,9 @@ class LoginController: UIViewController {
         }
         
         showLoader(true)
-        AuthService.logUserIn(withEmail: email, password: password) { (result, error) in
+        let auth = Auth.auth()
+        let authService = AuthService(client: auth)
+        authService.logUserIn(withEmail: email, password: password) { (result, error) in
             if let error = error {
                 self.showLoader(false)
                 print("DEBUG: Failed to log user in: \(error.localizedDescription)")

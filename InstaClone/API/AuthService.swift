@@ -66,13 +66,42 @@ struct AuthService {
         }
     }
     
+    //MARK: - 以下はMockを使ってTestをしている。
+    var client: AuthApiClient!
+    init(client: AuthApiClient) {
+        self.client = client
+    }
     
-    static func logUserIn(withEmail email: String, password: String, completion: AuthDataResultCallback?) {
-        Auth.auth().signIn(withEmail: email, password: password, completion: completion)
+    func logUserIn(withEmail email: String, password: String, completion: @escaping AuthDataResultCallback) {
+        client.signIn(withEmail: email, password: password) { (authResult, error) in
+            if let error = error{
+                completion(nil, error)
+                return
+            }
+            completion(authResult, nil)
+        }
     }
     
     
-    static func resetPassword(withEmail email: String, completion: SendPasswordResetCallback?) {
-        Auth.auth().sendPasswordReset(withEmail: email, completion: completion)
+    func resetPassword(withEmail email: String, completion: @escaping SendPasswordResetCallback) {
+        client.sendPasswordReset(withEmail: email) { (error) in
+            if let error = error{
+                completion(error)
+                return
+            }
+            completion(nil)
+        }
     }
+    
 }
+    
+
+extension Auth: AuthApiClient{
+    //プロトコルに準拠したのでこれ以上書くことはない。
+}
+    
+protocol AuthApiClient{
+    func signIn(withEmail: String, password: String, completion: ((AuthDataResult?, Error?) -> Void)?)
+    func sendPasswordReset(withEmail: String, completion: ((Error?) -> Void)?)
+}
+

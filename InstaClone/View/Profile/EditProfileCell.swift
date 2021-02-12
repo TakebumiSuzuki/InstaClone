@@ -72,7 +72,7 @@ class EditProfileCell: UITableViewCell {
     // MARK: - Selectors
     
     @objc func handleUpdateUserInfo() {  //TextFieldが.editingDidEndになった時に呼ばれる
-        delegate?.updateUserInfo(self) //selfとはcell自身。この引数が必要な理由はcell.viewModelが必要だから
+        delegate?.updateUserInfo(self)   //selfとはcell自身。この引数が必要な理由はcell.viewModelが必要だから
     }
     
 }
