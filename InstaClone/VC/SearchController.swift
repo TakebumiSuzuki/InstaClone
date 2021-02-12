@@ -367,7 +367,17 @@ extension SearchController: UICollectionViewDelegate { //.allの時にPostタッ
         vc.post = inSearchMode ? filteredPosts[indexPath.row] : posts[indexPath.row]
         navigationController?.pushViewController(vc, animated: true)
     }
+    
+    func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+        print(collectionView.contentSize.height)
+        print(collectionView.contentOffset.y)
+//        if collectionView.contentOffset.y + view.frame.size.height - 100 > collectionView.contentSize.height{
+//            fetchPosts(isFirstFetch: false)
+//        }
+    }
 }
+
+
 
 
 extension SearchController: UserCellDelegate{

@@ -177,7 +177,6 @@ class ProfileHeader: UICollectionReusableView {
         guard let viewModel = viewModel else { return }
          
         if let currentUser = Auth.auth().currentUser?.uid, currentUser == viewModel.user.uid{
-            print("ok")
             chatButton.isEnabled = false
         }
         

@@ -15,8 +15,8 @@ public class CustomButton: UIButton{
     
     public func setUp(title: String){
         setTitle(title, for: .normal)
-        setTitleColor(.white, for: .normal)
-        backgroundColor = #colorLiteral(red: 0.5568627715, green: 0.3529411852, blue: 0.9686274529, alpha: 1).withAlphaComponent(0.5)
+        setTitleColor(UIColor(white: 1, alpha: 0.67), for: .normal)
+        backgroundColor = #colorLiteral(red: 1, green: 0.135659839, blue: 0.8787164696, alpha: 1).withAlphaComponent(0.4)
         layer.cornerRadius = 5
         setHeight(50)
         titleLabel?.font = UIFont.boldSystemFont(ofSize: 20)  //initの中に入れるとworkしない理由は不明

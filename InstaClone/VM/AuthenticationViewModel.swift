@@ -25,7 +25,7 @@ struct LoginViewModel: AuthenticationViewModel {
     }
     
     var buttonBackgroundColor: UIColor {
-        return formIsValid ? #colorLiteral(red: 0.3647058904, green: 0.06666667014, blue: 0.9686274529, alpha: 1) : #colorLiteral(red: 0.5568627715, green: 0.3529411852, blue: 0.9686274529, alpha: 1).withAlphaComponent(0.5)
+        return formIsValid ? #colorLiteral(red: 1, green: 0.135659839, blue: 0.8787164696, alpha: 1).withAlphaComponent(0.8) : #colorLiteral(red: 1, green: 0.135659839, blue: 0.8787164696, alpha: 1).withAlphaComponent(0.4)
     }
     
     var buttonTitleColor: UIColor {
@@ -49,7 +49,7 @@ struct RegistrationViewModel: AuthenticationViewModel {
     }
     
     var buttonBackgroundColor: UIColor {
-        return formIsValid ? #colorLiteral(red: 0.3647058904, green: 0.06666667014, blue: 0.9686274529, alpha: 1) : #colorLiteral(red: 0.5568627715, green: 0.3529411852, blue: 0.9686274529, alpha: 1).withAlphaComponent(0.5)
+        return formIsValid ? #colorLiteral(red: 1, green: 0.135659839, blue: 0.8787164696, alpha: 1).withAlphaComponent(0.8) : #colorLiteral(red: 1, green: 0.135659839, blue: 0.8787164696, alpha: 1).withAlphaComponent(0.4)
     }
     
     var buttonTitleColor: UIColor {
@@ -65,7 +65,7 @@ struct ResetPasswordViewModel: AuthenticationViewModel {
     var formIsValid: Bool { return email?.isEmpty == false }
     
     var buttonBackgroundColor: UIColor {
-        formIsValid ? #colorLiteral(red: 0.3647058904, green: 0.06666667014, blue: 0.9686274529, alpha: 1) : #colorLiteral(red: 0.5568627715, green: 0.3529411852, blue: 0.9686274529, alpha: 1).withAlphaComponent(0.5)
+        formIsValid ? #colorLiteral(red: 1, green: 0.135659839, blue: 0.8787164696, alpha: 1).withAlphaComponent(0.8) : #colorLiteral(red: 1, green: 0.135659839, blue: 0.8787164696, alpha: 1).withAlphaComponent(0.4)
     }
     
     var buttonTitleColor: UIColor {

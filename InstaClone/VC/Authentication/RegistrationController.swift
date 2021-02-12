@@ -21,7 +21,7 @@ class RegistrationController: UIViewController {
     private lazy var photoButton: UIButton = {
         let bn = UIButton(type: .system)
         bn.setImage(#imageLiteral(resourceName: "plus_photo"), for: .normal)
-        bn.tintColor = .white
+        bn.tintColor = UIColor.white.withAlphaComponent(0.8)
         bn.addTarget(self, action: #selector(handleProfilePhotoSelect), for: .touchUpInside)
         return bn
     }()
@@ -76,14 +76,16 @@ class RegistrationController: UIViewController {
     
     private let backgroundImage: UIImageView = {
        let iv = UIImageView()
-        iv.contentMode = .scaleAspectFill
-        iv.image = UIImage(named: "pink2")
+        iv.contentMode = .scaleAspectFit
+        iv.image = UIImage(named: "bg_MaleFriends")
+        iv.alpha = CGFloat(0.6)
         return iv
     }()
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         configureUI()
         configureTextFields()
         setupKeyboardNotification()
@@ -102,9 +104,16 @@ class RegistrationController: UIViewController {
     private func configureUI() {
 
 //        configureGradientLayer()   //UIViewのextensionで定義しているmethod
+        view.backgroundColor = UIColor.systemGray
         
-        view.addSubview(backgroundImage)
-        backgroundImage.fillSuperview()
+        let dummyView = UIView()
+        view.addSubview(dummyView)
+        dummyView.fillSuperview()
+        dummyView.backgroundColor = .clear
+        
+        dummyView.addSubview(backgroundImage)
+        backgroundImage.anchor(top: view.topAnchor, bottom: view.bottomAnchor)
+        backgroundImage.centerX(inView: dummyView)
         
         view.addSubview(photoButton)
         photoButton.centerX(inView: view)

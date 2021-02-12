@@ -59,6 +59,14 @@ class ResetPasswordController: UIViewController {
         return button
     }()
     
+    private lazy var backgroundImage: UIImageView = {
+       let iv = UIImageView()
+        iv.contentMode = .scaleAspectFit
+        iv.image = UIImage(named: "bg_FemaleFriends")
+        iv.alpha = CGFloat(0.6)
+        return iv
+    }()
+    
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
@@ -77,11 +85,22 @@ class ResetPasswordController: UIViewController {
     
     private func configureUI() {
         
-        configureGradientLayer()
+//        configureGradientLayer()
         
         emailTextField.text = email //ここからの３行は前ページから引き継いだemailをそのまま表示させるため
         viewModel.email = email
         updateButtonState()
+        
+        view.backgroundColor = UIColor.systemGray
+        
+        let dummyView = UIView()
+        view.addSubview(dummyView)
+        dummyView.fillSuperview()
+        dummyView.backgroundColor = .clear
+        
+        dummyView.addSubview(backgroundImage)
+        backgroundImage.anchor(top: view.topAnchor, bottom: view.bottomAnchor)
+        backgroundImage.centerX(inView: dummyView)
         
         emailTextField.delegate = self
         emailTextField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)

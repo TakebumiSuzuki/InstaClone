@@ -66,6 +66,14 @@ class LoginController: UIViewController {
         return button
     }()
     
+    private lazy var backgroundImage: UIImageView = {
+       let iv = UIImageView()
+        iv.contentMode = .scaleAspectFit
+        iv.image = UIImage(named: "bg_LayingOnBed")
+        iv.alpha = CGFloat(0.6)
+        return iv
+    }()
+    
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
@@ -86,10 +94,21 @@ class LoginController: UIViewController {
     
     private func configureUI() {
         
-        configureGradientLayer()    //viewControllerのextension
+//        configureGradientLayer()    //viewControllerのextension
         
         navigationController?.navigationBar.isHidden = true
         navigationController?.navigationBar.barStyle = .black  //これを書くとstatus barが白字になる
+        
+        view.backgroundColor = .darkGray
+        
+        let dummyView = UIView()
+        view.addSubview(dummyView)
+        dummyView.fillSuperview()
+        dummyView.backgroundColor = .clear
+        
+        dummyView.addSubview(backgroundImage)
+        backgroundImage.anchor(top: view.topAnchor, bottom: view.bottomAnchor)
+        backgroundImage.centerX(inView: dummyView)
         
         view.addSubview(iconImageView)
         iconImageView.centerX(inView: view)

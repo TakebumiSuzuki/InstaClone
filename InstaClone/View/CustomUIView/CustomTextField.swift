@@ -22,7 +22,8 @@ public class CustomTextField: UITextField {
         tintColor = .white
         autocorrectionType = .no
         keyboardAppearance = .dark
-        backgroundColor = UIColor(white: 1, alpha: 0.1)
+        backgroundColor = UIColor(white: 1, alpha: 0.2)
+        layer.cornerRadius = 4
         setHeight(50)
         attributedPlaceholder = NSAttributedString(string: placeholder,
                                                       attributes: [.foregroundColor: UIColor(white: 1, alpha: 0.7)])

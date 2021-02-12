@@ -15,7 +15,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="splashScreenBackground" translatesAutoresizingMaskIntoConstraints="NO" id="XQ5-Nf-63t">
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="pink3" translatesAutoresizingMaskIntoConstraints="NO" id="XQ5-Nf-63t">
                                 <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                             </imageView>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Logo" translatesAutoresizingMaskIntoConstraints="NO" id="QiD-60-SBZ">
@@ -56,6 +56,6 @@
     <resources>
         <image name="InstagramLogo" width="169.06300354003906" height="169.06300354003906"/>
         <image name="Logo" width="822" height="252"/>
-        <image name="splashScreenBackground" width="1000" height="2059"/>
+        <image name="pink3" width="812" height="542"/>
     </resources>
 </document>
