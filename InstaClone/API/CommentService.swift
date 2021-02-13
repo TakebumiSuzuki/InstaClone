@@ -35,11 +35,9 @@ class CommentService {
             .order(by: "timestamp", descending: true)
         
         commentListener = query.addSnapshotListener { (snapshot, error) in
-            print("Listener listening")
-            if let error = error{
-                print("DEBUG: Error during snapshotListening...\(error.localizedDescription)")
-                return
-            }
+            print("-----------------Comment Listener invoked")
+            if let error = error{ print("DEBUG: Error during snapshotListening: \(error.localizedDescription)"); return }
+            
             comments = []
             snapshot?.documents.forEach({ document in
                 let comment = Comment(dictionary: document.data())

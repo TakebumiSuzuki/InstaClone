@@ -32,7 +32,7 @@ struct CommentViewModel {
         label.numberOfLines = 0
         label.attributedText = self.commentLabelText()
         label.lineBreakMode = .byWordWrapping
-        label.setWidth(width)  //extension。UIViewに対してwithのconstraintを適用するメソッド
+        label.setWidth(width)  //extension。UIViewに対して任意のwithのconstraintを適用するメソッド
         return label.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)  //ここはまだ不明
     }
 }

@@ -6,10 +6,9 @@
 //
 
 import XCTest
-import UIKit
 @testable import InstaClone
 @testable import Firebase
-@testable import ActiveLabel
+
 
 class PostViewModelTests: XCTestCase{
     
@@ -29,12 +28,14 @@ class PostViewModelTests: XCTestCase{
         "didLike": false ]
     
     
-    override func setUpWithError() throws {
+    override func setUp(){
+        super.setUp()
         post = Post(dictionary: data)
         sut = PostViewModel(post: post)
     }
     
-    override func tearDownWithError() throws {
+    override func tearDown(){
+        super.tearDown()
         sut = nil
     }
 

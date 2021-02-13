@@ -11,7 +11,7 @@ protocol CommentCellDelegate: class{    //profileImageタップした時にプ�
     func cell(_ cell: UICollectionViewCell, showUserProfileFor uid: String)
 }
 
-//commentLabelの外側のパッディングがどのように決まっているのか不明。上下の幅が広すぎる
+
 class CommentCell: UICollectionViewCell {
     
     // MARK: - Properties
@@ -22,7 +22,7 @@ class CommentCell: UICollectionViewCell {
     
     weak var delegate: CommentCellDelegate?
     
-    lazy var profileImageView: UIImageView = {
+    private lazy var profileImageView: UIImageView = {
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFill
         iv.clipsToBounds = true
@@ -82,7 +82,7 @@ class CommentCell: UICollectionViewCell {
         timeLabel.text = "\(viewModel.timeStamp) ago"
     }
     
-    @objc func profileImageTapped(){
+    @objc private func profileImageTapped(){
         guard let viewModel = viewModel else{ return }
         
         let uid = viewModel.comment.uid

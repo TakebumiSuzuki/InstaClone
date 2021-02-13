@@ -8,7 +8,7 @@
 //このページのVCがdeinitされない→解決!!ActiveLabelのクロージャーが原因だった。
 //reloadData()やscrollToItemを実行する時には必ずしもdispatchQueue.main.asyncの中で行う必要があるのか。
 //commentInputView.commentTextViewと指定してresignFirstResponder()したらキーボードを閉じれた。
-
+//通常のrootView空の階層に属していないので例外的なコードを書かないといけないのかと。
 
 import UIKit
 import ActiveLabel
@@ -61,7 +61,6 @@ class CommentController: UIViewController {
     }()
     
     private lazy var commentInputView: CustomInputAccesoryView = {  //layz varにしている理由はwidthでviewを使っているから。
-        
         let frame = CGRect(x: 0, y: 0, width: view.frame.width, height: 50)
         let inputView = CustomInputAccesoryView(config: .comments, frame: frame)
         inputView.delegate = self
@@ -98,12 +97,12 @@ class CommentController: UIViewController {
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        commentService.commentListener.remove()  //このラインのお陰でListenerが重複しないだけでなく、deinitできる。
+        commentService.commentListener.remove()    //このラインのお陰でListenerが重複しないだけでなく、deinitできる。
         tabBarController?.tabBar.isHidden = false
     }
     
     deinit {
-        print("------------------------Comment View DEINITIALIZING---------------------")
+        print("--------------CommentController is being DEINITIALIZED---------------")
     }
     
     required init?(coder: NSCoder) {
@@ -163,7 +162,7 @@ class CommentController: UIViewController {
         collectionView.register(CommentCell.self, forCellWithReuseIdentifier: reuseIdentifier)
         //以下の2つはこの場合はセットで。alwaysBounceVertical = falseにすると2,3itemしかない場合に機能しない。
         collectionView.alwaysBounceVertical = true
-        collectionView.keyboardDismissMode = .interactive
+        collectionView.keyboardDismissMode = .onDrag
     }
     
     func configureUI(){
@@ -193,13 +192,13 @@ class CommentController: UIViewController {
     //MARK: - Actions
     
     @objc func collectionViewTapped(){  //キーボードをdismissする
-        commentInputView.commentTextView.resignFirstResponder()
+//        commentInputView.commentTextView.resignFirstResponder()
     }
     
     
     // MARK: - API
     
-    func fetchComments() {
+    private func fetchComments() {
 
         commentService.fetchComments(forPost: post.postId) { comments in
             
@@ -255,7 +254,6 @@ extension CommentController: CommentCellDelegate{  //コメント左のプロフ
             case .success(let user):
                 let vc = ProfileController(user: user)
                 self.navigationController?.pushViewController(vc, animated: true)
-                
             }
         }
     }
@@ -268,6 +266,9 @@ extension CommentController: CustomInputAccesoryViewDelegate {  //accessoryView�
     
     func inputView(_ inputView: CustomInputAccesoryView, wantsToUploadText text: String) {
         
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.isEmpty{ return }
+        
         guard let tab = tabBarController as? MainTabController else { return }
         guard let currentUser = tab.user else { return }
         showLoader(true)
@@ -275,11 +276,9 @@ extension CommentController: CustomInputAccesoryViewDelegate {  //accessoryView�
         CommentService.uploadComment(comment: text, post: post, user: currentUser) { error in
             
             self.showLoader(false)
-            self.commentInputView.commentTextView.resignFirstResponder()
-            if let error = error{
-                print("DEBUG: Error uploading comment. \(error)")
-                return
-            }
+//            self.commentInputView.commentTextView.resignFirstResponder()
+            if let error = error{ print("DEBUG: Error uploading comment: \(error)"); return }
+            
             inputView.clearInputText()
             NotificationService.uploadNotification(toUid: self.post.ownerUid,fromUser: currentUser,
                                                    type: .comment, post: self.post) { (error) in

@@ -7,9 +7,9 @@
 
 import Firebase
 
-//Notificationの種類が、like/follow/commentなのかを分類する。
+//Notificationの種類分別。like/follow/commentを分類する。
 enum NotificationType: Int {
-    case like  //ハートボタンを押した時に作られるnotification
+    case like  //ハートボタンを押した時に発信されるnotification
     case follow  //followした時
     case comment  //コメントした時
     
@@ -26,7 +26,7 @@ enum NotificationType: Int {
 }
 
 struct Notification {
-    //受けて側のuidが含まれていない。なぜなら、Firestore内でuid別に保存場所を分けているから。
+    //受け手側のuidが含まれていない。なぜなら、Firestore内でuid別に保存場所を分けているから必要ない。
     let type: NotificationType
     let id: String  //firestoreアップロード時のドキュメントID(パス)
     let uid: String   //発信元(つまり自分)のuid
@@ -36,7 +36,7 @@ struct Notification {
     var postId: String?   //likeとcommentの時のみ値が入る。オプショナルなのでvar。
     var postImageUrl: String?  //likeとcommentの時のみ値が入る。オプショナルなのでvar。
     
-    var userIsFollowed = false  //この変数はfirebaseに保存されることはなく、ローカルでfetch直後に記入される
+    var userIsFollowed = false  //この変数はfirebaseに保存されることはなく、ローカル内でfetch直後に記入される
     
     
     init(dictionary: [String: Any]) {

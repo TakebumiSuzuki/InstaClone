@@ -11,7 +11,6 @@ import Firebase
 class MessagingService {
     
     var latestMessageListener: ListenerRegistration!
-    var chatListener: ListenerRegistration!
     
     func fetchRecentMessages(completion: @escaping ([Message]) -> Void) {
         guard let currentUid = Auth.auth().currentUser?.uid else { return }
@@ -27,7 +26,9 @@ class MessagingService {
         }
     }
     
-    //documentChangesの.addedを使いその後appendしているがその必要はない。firebaseのsnapshotは普通に自動で最小のDL量で完成形を出してくれるので。
+    
+    var chatListener: ListenerRegistration!
+    
     func fetchMessages(forUser user: User, completion: @escaping ([Message]) -> Void) {
         guard let currentUid = Auth.auth().currentUser?.uid else { return }
         
@@ -45,10 +46,10 @@ class MessagingService {
     }
     
     
-    //重要。data辞書を自分と相手のmessage用のスペースに保存し、さらにそれぞれのrecent-messagesスペースに.setDataで消去保存する。
-    static func uploadMessage(_ message: String, to user: User, completion: @escaping(Error?) -> Void) {
-        
+    //重要。チャット送信。data辞書を自分と相手のmessage用のスペースに保存し、さらにそれぞれのrecent-messagesスペースに.setDataで消去保存する。
+    static func uploadMessage(_ message: String, to user: User, completion: @escaping (Error?) -> Void) {
         guard let currentUid = Auth.auth().currentUser?.uid else { return }
+        
         UserService.fetchUser(withUid: currentUid) { (result) in
             switch result{
             case .failure(let error):

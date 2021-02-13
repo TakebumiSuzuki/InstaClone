@@ -15,10 +15,13 @@ class AuthServiceTests: XCTestCase {
     var clientMock: AuthApiClient!
     var testExcuted = false
     
-    override func setUpWithError() throws {
+    override func setUp(){
+        super.setUp()
+        testExcuted = false
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown(){
+        super.tearDown()
         sut = nil
         clientMock = nil
     }
@@ -30,8 +33,8 @@ class AuthServiceTests: XCTestCase {
         sut.logUserIn(withEmail: "placeHolder", password: "placeHolder") { (result, error) in
             self.testExcuted = true
             
-            XCTAssertEqual(self.testExcuted, true)
-            XCTAssertEqual(result, nil)
+            XCTAssertTrue(self.testExcuted)
+            XCTAssertNil(result)
             XCTAssertNotNil(error)
         }
     }
@@ -43,7 +46,7 @@ class AuthServiceTests: XCTestCase {
         sut.resetPassword(withEmail: "placeHolder") { (error) in
             self.testExcuted = true
             
-            XCTAssertEqual(self.testExcuted, true)
+            XCTAssertTrue(self.testExcuted)
             XCTAssertNil(error)
         }
     }
@@ -55,7 +58,7 @@ class AuthServiceTests: XCTestCase {
         sut.resetPassword(withEmail: "placeHolder") { (error) in
             self.testExcuted = true
             
-            XCTAssertEqual(self.testExcuted, true)
+            XCTAssertTrue(self.testExcuted)
             XCTAssertNotNil(error)
         }
     }

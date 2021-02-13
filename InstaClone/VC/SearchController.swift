@@ -33,7 +33,7 @@ enum UserFilterConfig: Equatable {  //Equatableがあるとイコールが使え
         case .followers: return "Followers"
         case .following: return "Following"
         case .likes: return "Likes"
-        case .messages: return "New Messages"   //以上4つの場合はsearchBarは表示されないし、する必要がない。
+        case .messages: return "Your Followings"   //以上4つの場合はsearchBarは表示されないし、する必要がない。
         case .all: return "Search Posts & People"  //最初の画面は全ポスト表示。.messagesと.allの場合はuserは全登録者表示。
         }
     }

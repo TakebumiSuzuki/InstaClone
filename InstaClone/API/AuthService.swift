@@ -67,12 +67,13 @@ struct AuthService {
     }
     
     //MARK: - 以下はMockを使ってTestをしている。
-    var client: AuthApiClient!
+    var client: AuthApiClient
     init(client: AuthApiClient) {
         self.client = client
     }
     
     func logUserIn(withEmail email: String, password: String, completion: @escaping AuthDataResultCallback) {
+        
         client.signIn(withEmail: email, password: password) { (authResult, error) in
             if let error = error{
                 completion(nil, error)

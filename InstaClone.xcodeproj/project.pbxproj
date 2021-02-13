@@ -75,6 +75,7 @@
 		0C8919F325D5CD950083383D /* ImageUploaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8919F225D5CD950083383D /* ImageUploaderTests.swift */; };
 		0C8919F725D5E1190083383D /* UserServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8919F625D5E1190083383D /* UserServiceTests.swift */; };
 		0C8919FB25D6007C0083383D /* ExtensionsConstrains.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8919FA25D6007C0083383D /* ExtensionsConstrains.swift */; };
+		0C891A0125D707E70083383D /* NotificationViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C891A0025D707E70083383D /* NotificationViewModelTests.swift */; };
 		0C9B3BE225CEDF1200261667 /* LoginViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9B3BE125CEDF1200261667 /* LoginViewModelTests.swift */; };
 		0CA0E91625C6D33E00BDD123 /* CustomError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA0E91525C6D33E00BDD123 /* CustomError.swift */; };
 		0CA0E91A25C97AE400BDD123 /* TimestampService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA0E91925C97AE400BDD123 /* TimestampService.swift */; };
@@ -163,6 +164,7 @@
 		0C8919F225D5CD950083383D /* ImageUploaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageUploaderTests.swift; sourceTree = "<group>"; };
 		0C8919F625D5E1190083383D /* UserServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserServiceTests.swift; sourceTree = "<group>"; };
 		0C8919FA25D6007C0083383D /* ExtensionsConstrains.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionsConstrains.swift; sourceTree = "<group>"; };
+		0C891A0025D707E70083383D /* NotificationViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationViewModelTests.swift; sourceTree = "<group>"; };
 		0C9B3BCD25CEDE0100261667 /* InstaCloneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InstaCloneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C9B3BD125CEDE0200261667 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0C9B3BE125CEDF1200261667 /* LoginViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModelTests.swift; sourceTree = "<group>"; };
@@ -290,8 +292,8 @@
 				0C0C089325C093F7006C79C5 /* Pofile */,
 				0C0C089825C09414006C79C5 /* UserCellViewModel.swift */,
 				0C0C089B25C0941D006C79C5 /* PostViewModel.swift */,
-				0C0C089E25C09426006C79C5 /* CommentViewModel.swift */,
 				0C0C08A125C0942E006C79C5 /* NotificationViewModel.swift */,
+				0C0C089E25C09426006C79C5 /* CommentViewModel.swift */,
 				0C0C08A425C09435006C79C5 /* MessageViewModel.swift */,
 			);
 			path = VM;
@@ -408,16 +410,25 @@
 			path = ApiTests;
 			sourceTree = "<group>";
 		};
+		0C891A0B25D863000083383D /* AuthenticationTests */ = {
+			isa = PBXGroup;
+			children = (
+				0C8919B825D41B190083383D /* ValidationServiceTests.swift */,
+				0C9B3BE125CEDF1200261667 /* LoginViewModelTests.swift */,
+				0C8919C225D4564B0083383D /* RestPasswordViewModelTests.swift */,
+				0C8919BE25D44F350083383D /* RegistrationViewModelTests.swift */,
+			);
+			path = AuthenticationTests;
+			sourceTree = "<group>";
+		};
 		0C9B3BCE25CEDE0200261667 /* InstaCloneTests */ = {
 			isa = PBXGroup;
 			children = (
 				0C8919EB25D5B1640083383D /* ApiTests */,
 				0C8919D725D551050083383D /* PostViewModelTests.swift */,
+				0C891A0025D707E70083383D /* NotificationViewModelTests.swift */,
 				0C8919D125D52D820083383D /* ProfileHeaderViewModelTests.swift */,
-				0C8919B825D41B190083383D /* ValidationServiceTests.swift */,
-				0C9B3BE125CEDF1200261667 /* LoginViewModelTests.swift */,
-				0C8919C225D4564B0083383D /* RestPasswordViewModelTests.swift */,
-				0C8919BE25D44F350083383D /* RegistrationViewModelTests.swift */,
+				0C891A0B25D863000083383D /* AuthenticationTests */,
 				0C9B3BD125CEDE0200261667 /* Info.plist */,
 			);
 			path = InstaCloneTests;
@@ -700,6 +711,7 @@
 				0C8919D225D52D820083383D /* ProfileHeaderViewModelTests.swift in Sources */,
 				0C8919B925D41B190083383D /* ValidationServiceTests.swift in Sources */,
 				0C8919F725D5E1190083383D /* UserServiceTests.swift in Sources */,
+				0C891A0125D707E70083383D /* NotificationViewModelTests.swift in Sources */,
 				0C8919F325D5CD950083383D /* ImageUploaderTests.swift in Sources */,
 				0C9B3BE225CEDF1200261667 /* LoginViewModelTests.swift in Sources */,
 				0C8919BF25D44F350083383D /* RegistrationViewModelTests.swift in Sources */,

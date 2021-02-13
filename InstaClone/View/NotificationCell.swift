@@ -64,15 +64,15 @@ class NotificationCell: UITableViewCell {
         return button
     }()
     
-    var infoConstraint: NSLayoutConstraint!
-    var postImageConstraint: NSLayoutConstraint!
+    private var postImageConstraint: NSLayoutConstraint!
+    private var followButtonConstraint: NSLayoutConstraint!
     
     // MARK: - Lifecycle
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         
-        selectionStyle = .none  //cellを選択した時の背景色を決める。色が変わらないように。
+        selectionStyle = .none  //cellがdidSelectされた時の背景色を決める。色が変わらないように。
         
         addSubview(profileImageView)
         profileImageView.setDimensions(height: 48, width: 48)
@@ -91,7 +91,7 @@ class NotificationCell: UITableViewCell {
         contentView.addSubview(infoLabel)
         infoLabel.centerY(inView: profileImageView,
                           leftAnchor: profileImageView.rightAnchor, paddingLeft: 8)
-        infoConstraint = infoLabel.rightAnchor.constraint(equalTo: followButton.leftAnchor, constant: -4)
+        followButtonConstraint = infoLabel.rightAnchor.constraint(equalTo: followButton.leftAnchor, constant: -4)
         postImageConstraint = infoLabel.rightAnchor.constraint(equalTo: postImageView.leftAnchor, constant: -4)
     }
     
@@ -102,12 +102,12 @@ class NotificationCell: UITableViewCell {
     
     // MARK: - Actions
     
-    @objc func handlePostTapped() {
+    @objc private func handlePostTapped() {
         guard let postId = viewModel?.notification.postId else { return }
         delegate?.cell(self, wantsToViewPost: postId)
     }
     
-    @objc func handleFollowTapped() {
+    @objc private func handleFollowTapped() {
         guard let viewModel = viewModel else { return }
         
         if viewModel.notification.userIsFollowed {
@@ -136,10 +136,10 @@ class NotificationCell: UITableViewCell {
         
         if followButton.isHidden{
             postImageConstraint.isActive = true
-            infoConstraint.isActive = false
+            followButtonConstraint.isActive = false
         }
         if postImageView.isHidden{
-            infoConstraint.isActive = true
+            followButtonConstraint.isActive = true
             postImageConstraint.isActive = false
         }
     }

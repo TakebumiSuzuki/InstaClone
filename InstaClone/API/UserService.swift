@@ -13,7 +13,7 @@ typealias FirestoreCompletion = (Error?) -> Void
 
 struct UserService {
     
-    //profileController,feedController,notificationController,SearchConrollerから。--------------------------------------
+    //profileController,feedController,notificationController,SearchConroller,commentControllerから。--------------------
     static func fetchUser(withUid uid: String, completion: @escaping (Result<User, Error>) -> Void) {
         
         COLLECTION_USERS.document(uid).getDocument { snapshot, error in

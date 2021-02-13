@@ -8,12 +8,12 @@
 import UIKit
 import Firebase
 
-//timestampを入れ忘れているので、自分で入れてみる事。
+
 class MessageCell: UICollectionViewCell {
 
     // MARK: - Properties
     
-    //messageを引数にインスタンス化され、ここに代入される。また、override initが先に全部実行された後にこちらが実行される。
+    //messageを引数としてインスタンス化され、ここに代入される。また、override initが先に全部実行された後にこちらが実行される。
     var viewModel: MessageViewModel? {
         didSet { configure() }
     }
@@ -26,7 +26,6 @@ class MessageCell: UICollectionViewCell {
         tf.textAlignment = .center
         tf.font = UIFont.systemFont(ofSize: 12)
         tf.textColor = .systemGray
-        tf.text = "test"
         return tf
     }()
     
@@ -39,7 +38,7 @@ class MessageCell: UICollectionViewCell {
     
     private let bubbleContainer: UIView = {  //これのbackgroundcolor, boarderwidth, constraintはviewModelによって処理される
         let view = UIView()
-        view.backgroundColor = .systemPurple //これは結局configure()で上書きされるのでコメントアウトでもok
+//        view.backgroundColor = .systemPurple //これは結局configure()で上書きされるのでコメントアウトでもok
         return view   //これの中にsubViewとしてtextViewが入る。
     }()
 
@@ -56,13 +55,14 @@ class MessageCell: UICollectionViewCell {
     
     // MARK: - Lifecycle
 
-    override init(frame: CGRect) {  //UICollectionViewCellの中のcontentViewの仕組みがまだわかっていない
+    override init(frame: CGRect) {  //UICollectionViewCellの中のcontentViewの仕組みがまだ完全にわかっていない
         super.init(frame: frame)
         
         addSubview(dateCellHeader)
         dateCellHeader.anchor(top: topAnchor, left: leftAnchor, right: rightAnchor, height: 20)
+        
         addSubview(profileImageView)  //paddingBottomが-4な為、わずかにプロフィール丸画像が下にずれる。
-        //ちなみに、self.clipsToBounds = trueとすると、丸画像の下が切れる。
+        //ちなみに、ここでself.clipsToBounds = trueとすると、丸画像の下が切れる。
         profileImageView.anchor(left: leftAnchor, bottom: bottomAnchor, paddingLeft: 12, paddingBottom: -4)
         profileImageView.setDimensions(height: 36, width: 36)
         profileImageView.layer.cornerRadius = 36 / 2

@@ -17,8 +17,7 @@ class ConversationsController: UIViewController {
     private let tableView = UITableView()
     private var messages = [Message]()
     private var conversationsDictionary = [String: Message]()
-    
-    let messagingService = MessagingService()
+    private let messagingService = MessagingService()
     
     // MARK: - Lifecycle
     
@@ -36,7 +35,6 @@ class ConversationsController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         tabBarController?.tabBar.isHidden = false
-        messagingService.latestMessageListener.remove()
     }
     
     
@@ -69,21 +67,23 @@ class ConversationsController: UIViewController {
     
     // MARK: - API
     
-    func fetchConversations() {
-        
-        messagingService.fetchRecentMessages { (messages) in   //listener使用
+    func fetchConversations() {  //listener使用
+        messagingService.fetchRecentMessages { (messages) in
             self.messages = messages
             self.tableView.reloadData()
+            if messages.isEmpty == true{
+                self.showSimpleAlert(title: "There isn't any conversation yet. Search and add your friend first!", message: "", actionTitle: "ok")
+            }
         }
     }
     
     // MARK: - Actions
     
-    @objc func showNewMessage() {  //メッセージの新規作成。searchControllerに.messageを入れてpresentしている。
+    @objc func showNewMessage() {     //メッセージの新規作成。searchControllerに.messageを入れてpresentしている。
         guard let uid = Auth.auth().currentUser?.uid else { return }
         let vc = SearchController(config: .messages(uid))
         vc.delegate = self
-        vc.fetchUsers()  //遷移先の情報をロードする
+        vc.fetchUsers()  //遷移先の情報を先行でロードする
         let nav = UINavigationController(rootViewController: vc)
         present(nav, animated: true, completion: nil)
     }
@@ -119,6 +119,7 @@ extension ConversationsController: UITableViewDelegate {
         UserService.fetchUser(withUid: messages[indexPath.row].chatPartnerId) { (result) in
             switch result{
             case .failure(let error):
+                self.showLoader(false)
                 print("Error fetching User: \(error.localizedDescription)")
                 
             case .success(let user):

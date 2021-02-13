@@ -20,20 +20,20 @@ class NotificationsController: UITableViewController {
         didSet { tableView.reloadData() }
     }
     
-    let refresher = UIRefreshControl()
+    private let refresher = UIRefreshControl()
     
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
         configureTableView()
-        fetchNotifications() //viewWillAppearに入れるべきではと。。
+        fetchNotifications() //viewWillAppearに入れる方が良いのか迷う
     }
     
     
     // MARK: - Helpers
     
-    func configureTableView() {
+    private func configureTableView() {
         view.backgroundColor = .white
         navigationItem.title = "Notifications"
         
@@ -47,8 +47,8 @@ class NotificationsController: UITableViewController {
     
     // MARK: - API
     
-    func fetchNotifications() {       //paginationは付けずに、単純にfetchの数を30個に限定している。
-        NotificationService.fetchNotifications { result in
+    private func fetchNotifications() {       //paginationは付けずに、単純にfetchの数を直近の30個に限定する仕様にした
+        NotificationService.fetchNotifications { result in  //ここで時間順に並べて取り出している。
             switch result{
             case .failure(let error):
                 self.refresher.endRefreshing()
@@ -60,7 +60,7 @@ class NotificationsController: UITableViewController {
         }
     }
     
-    func checkIfUserIsFollowed() {
+    private func checkIfUserIsFollowed() {
         let group = DispatchGroup()
         
         notifications.forEach { notification in  //ここで新しく定義したnotificationはletとして扱われるのでmutateできない。
@@ -90,7 +90,7 @@ class NotificationsController: UITableViewController {
     
     // MARK: - Actions
     
-    @objc func handleRefresh() {
+    @objc private func handleRefresh() {
         fetchNotifications()  //この処理の中でエラーハンドリングをしっかりしたので問題ないと思うが、念のために下の10秒ルールを課しておく。
         DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) {
             self.refresher.endRefreshing()
@@ -136,7 +136,7 @@ extension NotificationsController {
 
 extension NotificationsController: NotificationCellDelegate {
     
-    //followボタンを押した時。firebase上の情報を更新した後、viewModel上の情報をローカルで変更。合計3つの工程を経る必要がある。
+    //followボタンを押した時。合計4つの工程を経る必要がある。
     func cell(_ cell: NotificationCell, wantsToFollow uid: String) {
         guard let tab = tabBarController as? MainTabController else{ return }
         guard let user = tab.user else{ return }
@@ -149,20 +149,19 @@ extension NotificationsController: NotificationCellDelegate {
         UserService.follow(uid: uid) { (result) in  //3.firestore上のデータを書き換える
             switch result{
             case .failure(let error):
-//                self.showSimpleAlert(title: "Network Error.Failed to Follow", message: "Please try later again.", actionTitle: "ok")
-                print("DEBUG: Error following process in Firestore. \(error.localizedDescription)")
+                print("DEBUG: Error following process in Firestore: \(error.localizedDescription)")
             case .success(_):   //ここには"succeed"と書いたが入ったerrorが返ってくるが使わない。
+                //4.自分のfollowアクションのnotificationを相手に送る。
                 NotificationService.uploadNotification(toUid: uid, fromUser: user, type: .follow) { (error) in
                     if let error = error{
                         print("DEBUG: Error sending follow notification in Notificaton Controller: \(error.localizedDescription)")
-                        
-                    }
+                    }  //error = nilの時は成功したということ。
                 }
             }
         }
     }
     
-    
+    //unfollowする時
     func cell(_ cell: NotificationCell, wantsToUnfollow uid: String) {
         
         cell.viewModel?.notification.userIsFollowed.toggle()  //1.即席でUIを対応させる為のコード
@@ -173,8 +172,7 @@ extension NotificationsController: NotificationCellDelegate {
         UserService.unfollow(uid: uid){ (result) in
             switch result{
             case .failure(let error):
-//                self.showSimpleAlert(title: "Network Error.Failed to unfollow", message: "Please try later again.", actionTitle: "ok")
-                print("DEBUG: Error unfollowing process in Firestore. \(error.localizedDescription)")
+                print("DEBUG: Error unfollowing process in Firestore: \(error.localizedDescription)")
             case .success(_):
                 NotificationService.deleteNotification(toUid: uid, type: .follow)
             }
@@ -187,7 +185,7 @@ extension NotificationsController: NotificationCellDelegate {
         PostService.fetchPost(withPostId: postId) { (result) in
             switch result{
             case .failure(let error):
-                print("DEBUG: Error fetching a single Post \(error.localizedDescription)")
+                print("DEBUG: Error fetching a single Post: \(error.localizedDescription)")
                 
             case .success(let post):
                 let vc = FeedController(collectionViewLayout: UICollectionViewFlowLayout())

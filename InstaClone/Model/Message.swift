@@ -7,16 +7,16 @@
 
 import Firebase
 
-struct Message {  //設計に問題がある。具体的にはfromId用のusernameとprofileImageUrlが必要。チャットは相対的なものなので。
+struct Message {
     
     let text: String
-    let timestamp: Timestamp  //送信した瞬間の時間。他のデータと共に必ずセーブされるのでオプショナルでなくても良いと思うが。。
+    let timestamp: Timestamp
     let messageId: String
     let chatPartners: [String]
     
     let toId: String
-    let toUsername: String  //toIDのusername
-    let toProfileImageUrl: String  //toIDのprofileImageUrl
+    let toUsername: String
+    let toProfileImageUrl: String
     
     let fromId: String
     let fromUsername: String

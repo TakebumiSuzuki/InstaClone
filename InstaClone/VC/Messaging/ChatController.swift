@@ -11,12 +11,12 @@ private let reuseIdentifier = "MessageCell"
 
 class ChatController: UICollectionViewController {
     
-    // MARK - Properties
+    // MARK: - Properties
     let messagingService = MessagingService()
     private let user: User    //会話相手のUserオブジェクト。インスタンス化時に代入される
     
     private var messages = [Message]()
-    var fromCurrentUser = false
+    private var fromCurrentUser = false
     
     private lazy var customInputView: CustomInputAccesoryView = {
         let frame = CGRect(x: 0, y: 0, width: view.frame.width, height: 50)
@@ -33,14 +33,9 @@ class ChatController: UICollectionViewController {
         super.init(collectionViewLayout: UICollectionViewFlowLayout())
     }
     
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         configureUI()
-        
     }
     override func viewWillAppear(_ animated: Bool) {
         fetchMessages()
@@ -48,15 +43,15 @@ class ChatController: UICollectionViewController {
     override func viewWillDisappear(_ animated: Bool) {
         messagingService.chatListener.remove()
     }
-
     override var inputAccessoryView: UIView? {
-        get { return customInputView }
+        return customInputView
     }
-    
     override var canBecomeFirstResponder: Bool {
         return true
     }
-    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     
     // MARK: - Helpers
@@ -64,26 +59,21 @@ class ChatController: UICollectionViewController {
     func configureUI() {
         collectionView.backgroundColor = .white
         navigationItem.title = user.username
-        
         collectionView.register(MessageCell.self, forCellWithReuseIdentifier: reuseIdentifier)
         
         collectionView.alwaysBounceVertical = true
-        collectionView.keyboardDismissMode = .interactive
+        collectionView.keyboardDismissMode = .onDrag
         
         collectionView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 12, right: 0)
     }
     
     // MARK: - API
     
-    func fetchMessages() {
-        
-        //自分と相手のuidからsnapshotListenerで[message]をget。reloadData()でcellを作る時にMessageViewModelを作って代入。
+    func fetchMessages() {     //Listenerを使用
         messagingService.fetchMessages(forUser: user) { (messages) in
-            
             self.messages = messages
             self.collectionView.reloadData()
-            self.collectionView.scrollToItem(at: [0, self.messages.count - 1],
-                                             at: .bottom, animated: true)
+            self.collectionView.scrollToItem(at: [0, self.messages.count - 1], at: .bottom, animated: true)
         }
     }
 }
@@ -103,8 +93,6 @@ extension ChatController {
             cell.dateCellHeader.removeFromSuperview()
         }
         
-        
-        
         return cell
     }
     
@@ -112,11 +100,10 @@ extension ChatController {
 
 extension ChatController: UICollectionViewDelegateFlowLayout {
     
-    //reloadの度に一回だけ呼ばれるみたい
+    //reloadData()の度に一回だけ呼ばれる
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return .init(top: 16, left: 0, bottom: 16, right: 0)
     }
-    
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
         return 15
@@ -142,21 +129,21 @@ extension ChatController: CustomInputAccesoryViewDelegate {
     
     func inputView(_ inputView: CustomInputAccesoryView, wantsToUploadText text: String) {
         
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.isEmpty { return }
+        inputView.clearInputText()
+        
         MessagingService.uploadMessage(text, to: user) { error in
-            if let error = error {
-                print("DEBUG: Failed to upload message with error \(error.localizedDescription)")
-                return
-            }
+            if let error = error { print("DEBUG: Failed to upload message with error: \(error.localizedDescription)"); return }
         }
-        inputView.clearInputText()  //このラインはハンドラの外に出すべき
     }
 }
 
-class dateHeaderView: UICollectionReusableView {
+class dateHeaderView: UICollectionReusableView {    //送信日を表記するためのheaderView
     
     override init(frame: CGRect) {
             super.init(frame: frame)
-            self.backgroundColor = UIColor.red
+//            self.backgroundColor = UIColor.red
         }
 
         required init?(coder aDecoder: NSCoder) {
