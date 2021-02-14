@@ -5,7 +5,7 @@
 //  Created by TAKEBUMI SUZUKI on 1/27/21.
 //
 
-//profileViewControllerの下部にあるのと同じCellを使い、小さな正方形のポスト一覧を作る。
+//profileViewControllerの下部にあるのと同じCell(ProfileCell)とPostViewModelを使い、小さな正方形のポスト一覧を作る。
 
 import UIKit
 
@@ -36,7 +36,7 @@ class HashtagPostsController: UICollectionViewController {
     
     // MARK: - Helpers
     
-    func configureCollectionView() {
+    private func configureCollectionView() {
         navigationItem.title = "#\(hashtag)"
 
         collectionView.backgroundColor = .white
@@ -45,7 +45,7 @@ class HashtagPostsController: UICollectionViewController {
     
     // MARK: - API
     
-    func fetchPosts() {
+    private func fetchPosts() {
         PostService.fetchPosts(forHashtag: hashtag) { posts in
             self.posts = posts
             self.collectionView.reloadData()

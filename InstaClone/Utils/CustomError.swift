@@ -3,7 +3,7 @@
 //  InstaClone
 //
 //  Created by TAKEBUMI SUZUKI on 1/31/21.
-//
+//#imageLiteral(resourceName: "simulator_screenshot_2985EDDA-45E3-43D0-9A52-A453EC5C0F7E.png")
 
 import Foundation
 

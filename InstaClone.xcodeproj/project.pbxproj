@@ -79,6 +79,8 @@
 		0C9B3BE225CEDF1200261667 /* LoginViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9B3BE125CEDF1200261667 /* LoginViewModelTests.swift */; };
 		0CA0E91625C6D33E00BDD123 /* CustomError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA0E91525C6D33E00BDD123 /* CustomError.swift */; };
 		0CA0E91A25C97AE400BDD123 /* TimestampService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA0E91925C97AE400BDD123 /* TimestampService.swift */; };
+		0CDA6EC525D92D4700F49D4C /* SearchLogicService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CDA6EC425D92D4700F49D4C /* SearchLogicService.swift */; };
+		0CDA6ECD25D931F600F49D4C /* SearchLogicServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CDA6ECC25D931F600F49D4C /* SearchLogicServiceTests.swift */; };
 		4ACE9768C0A7F2172779C96B /* Pods_InstaClone.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F6AC4F6EA7832FD313E77B7 /* Pods_InstaClone.framework */; };
 		68BBF1D63C7D451F59242A27 /* Pods_InstaCloneTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0EA93B66AE20CF3E0C85BFD6 /* Pods_InstaCloneTests.framework */; };
 /* End PBXBuildFile section */
@@ -170,6 +172,8 @@
 		0C9B3BE125CEDF1200261667 /* LoginViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModelTests.swift; sourceTree = "<group>"; };
 		0CA0E91525C6D33E00BDD123 /* CustomError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomError.swift; sourceTree = "<group>"; };
 		0CA0E91925C97AE400BDD123 /* TimestampService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimestampService.swift; sourceTree = "<group>"; };
+		0CDA6EC425D92D4700F49D4C /* SearchLogicService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchLogicService.swift; sourceTree = "<group>"; };
+		0CDA6ECC25D931F600F49D4C /* SearchLogicServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchLogicServiceTests.swift; sourceTree = "<group>"; };
 		0EA93B66AE20CF3E0C85BFD6 /* Pods_InstaCloneTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_InstaCloneTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2539147B5DDFBC833335F3A8 /* Pods-InstaClone.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InstaClone.release.xcconfig"; path = "Target Support Files/Pods-InstaClone/Pods-InstaClone.release.xcconfig"; sourceTree = "<group>"; };
 		52CA783C64FEF241AE7C5708 /* Pods-InstaCloneTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InstaCloneTests.release.xcconfig"; path = "Target Support Files/Pods-InstaCloneTests/Pods-InstaCloneTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -371,6 +375,7 @@
 		0C0C08F125C0956E006C79C5 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				0CDA6EC425D92D4700F49D4C /* SearchLogicService.swift */,
 				0C8919B025D3EB7C0083383D /* ValidationService.swift */,
 				0CA0E91525C6D33E00BDD123 /* CustomError.swift */,
 				0C0C08F225C09582006C79C5 /* Extensions.swift */,
@@ -426,6 +431,7 @@
 			children = (
 				0C8919EB25D5B1640083383D /* ApiTests */,
 				0C8919D725D551050083383D /* PostViewModelTests.swift */,
+				0CDA6ECC25D931F600F49D4C /* SearchLogicServiceTests.swift */,
 				0C891A0025D707E70083383D /* NotificationViewModelTests.swift */,
 				0C8919D125D52D820083383D /* ProfileHeaderViewModelTests.swift */,
 				0C891A0B25D863000083383D /* AuthenticationTests */,
@@ -659,6 +665,7 @@
 				0C0C088025C093AA006C79C5 /* CommentCell.swift in Sources */,
 				0C0C08C025C094BB006C79C5 /* LoginController.swift in Sources */,
 				0C0C087925C09395006C79C5 /* CustomTextField.swift in Sources */,
+				0CDA6EC525D92D4700F49D4C /* SearchLogicService.swift in Sources */,
 				0C0C08EC25C09559006C79C5 /* NotificationService.swift in Sources */,
 				0C0C085F25C09311006C79C5 /* MessageCell.swift in Sources */,
 				0C0C08E625C09545006C79C5 /* PostService.swift in Sources */,
@@ -709,6 +716,7 @@
 				0C8919CC25D457630083383D /* RestPasswordViewModelTests.swift in Sources */,
 				0C8919ED25D5B1BC0083383D /* AuthServiceTests.swift in Sources */,
 				0C8919D225D52D820083383D /* ProfileHeaderViewModelTests.swift in Sources */,
+				0CDA6ECD25D931F600F49D4C /* SearchLogicServiceTests.swift in Sources */,
 				0C8919B925D41B190083383D /* ValidationServiceTests.swift in Sources */,
 				0C8919F725D5E1190083383D /* UserServiceTests.swift in Sources */,
 				0C891A0125D707E70083383D /* NotificationViewModelTests.swift in Sources */,
@@ -872,7 +880,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.djtake.InstaClone;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -892,7 +900,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.djtake.InstaClone;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

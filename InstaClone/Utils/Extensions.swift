@@ -24,13 +24,13 @@ extension UIViewController {
         }
     }
     
-    func configureGradientLayer() {
-        let gradient = CAGradientLayer()
-        gradient.colors = [UIColor.systemPurple.cgColor, UIColor.systemBlue.cgColor]
-        gradient.locations = [0, 1]
-        view.layer.addSublayer(gradient)
-        gradient.frame = view.frame
-    }
+//    func configureGradientLayer() {
+//        let gradient = CAGradientLayer()
+//        gradient.colors = [UIColor.systemPurple.cgColor, UIColor.systemBlue.cgColor]
+//        gradient.locations = [0, 1]
+//        view.layer.addSublayer(gradient)
+//        gradient.frame = view.frame
+//    }
     
     func showMessage(withTitle title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
@@ -133,21 +133,4 @@ extension UIButton {
     }
 }
 
-
-
-extension UIAlertController {   //constraintエラーが出るバグをなくすためだけのコード
-    
-    override open func viewDidLoad() {
-        super.viewDidLoad()
-        pruneNegativeWidthConstraints()
-    }
-
-    private func pruneNegativeWidthConstraints() {
-        for subView in self.view.subviews {
-            for constraint in subView.constraints where constraint.debugDescription.contains("width == - 16") {
-                subView.removeConstraint(constraint)
-            }
-        }
-    }
-}
 

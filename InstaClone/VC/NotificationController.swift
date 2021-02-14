@@ -27,7 +27,7 @@ class NotificationsController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configureTableView()
-        fetchNotifications() //viewWillAppearに入れる方が良いのか迷う
+        fetchNotifications()    //viewWillAppearに入れる方が良いのか迷う
     }
     
     

@@ -10,7 +10,6 @@ target 'InstaClone' do
 	pod 'Firebase/Database'
 	pod 'Firebase/Firestore'
 	pod 'Firebase/Storage'
-	pod 'Firebase/Messaging'
 	pod 'Firebase/Auth'
 	pod 'ActiveLabel'
 	pod 'SDWebImage'

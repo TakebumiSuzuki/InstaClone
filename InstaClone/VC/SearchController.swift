@@ -12,7 +12,8 @@ import Firebase
 private let reuseIdentifier = "UserCell"  //tableViewのcell
 private let postCellIdentifier = "PostCell"  //collectionViewのcell
 
-//.messageモードでcellをタップした場合にチャットスタートするためだけに使われる。
+
+
 protocol SearchControllerDelegate: class {
     func controller(_ controller: SearchController, wantsToStartChatWith user: User)
     func controller(_ controller: SearchController, wantsToShowSelectedUser user: User )
@@ -20,7 +21,7 @@ protocol SearchControllerDelegate: class {
 
 
 //このUserFilterConfigはinitの際に同時に代入される。
-enum UserFilterConfig: Equatable {  //Equatableがあるとイコールが使える。条件分岐で使えるという事。
+enum UserFilterConfig: Equatable {  //Equatableがあるとイコールが使える。条件分岐で使える。
     
     case followers(String)  //profileページのfollower押した時。Stringには自分のuidが入る
     case following(String)  //profileページのfollowing押した時。Stringには自分のuidが入る
@@ -57,7 +58,7 @@ class SearchController: UIViewController {
     
     private let searchController = UISearchController(searchResultsController: nil)
     
-    lazy var tableView: UITableView = {
+    private lazy var tableView: UITableView = {
         let tb = UITableView()
         //searchBarをresignFirstResponderする為。(delegateのdidSelectCellはこのページでは使わない。)
         tb.isUserInteractionEnabled = true
@@ -85,8 +86,8 @@ class SearchController: UIViewController {
         return cv
     }()
     
-    //searchControllerがアクティブでsearchBarが空でない場合のみtrue。これにより、tableViewでusersを使うかfilteredUsersを使うか。
-    //結論的には、searchBar内をタップするとtableViewでuserを表示(さらにその中でusersを使うかfilteredUsersを使うか分岐)。
+    //searchControllerがアクティブでsearchBarが空でない場合のみtrue。これにより、tableViewでusersを使うかfilteredUsersを使うかが決まる。
+    //結論的には、searchBar内をタップするとtableViewでusersを表示(さらにその中でusersを使うかfilteredUsersを使うか分岐)。
     //cancelをタップするとactiveではなくなり、tableViewがhiddenされてポスト表示になる。
     private var inSearchMode: Bool {  //tableViewのdataSource内でこの論理結果を使ってusers/filteredUsersのスイッチをしている。
         return searchController.isActive && !searchController.searchBar.text!.trimmingCharacters(in: .whitespaces).isEmpty
@@ -106,7 +107,6 @@ class SearchController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         configureUI()
         fetchUsers()
         if config == .all{
@@ -118,7 +118,7 @@ class SearchController: UIViewController {
    
     // MARK: - Helpers
     
-    func configureUI() {
+    private func configureUI() {
         view.backgroundColor = .white
         navigationItem.title = config.navigationItemTitle  //このnavigationItem.titleはnavigationController?.titleよりも優先される。
         tableView.register(UserCell.self, forCellReuseIdentifier: reuseIdentifier)
@@ -128,15 +128,14 @@ class SearchController: UIViewController {
         
         view.addSubview(tableView)  //ページを開いた初期画面では、.all以外の時にはtableViewが、.allの時にはcollectionViewが表示される。
         tableView.fillSuperview()  //superViewの上下左右に貼り付けるextensionメソッド
-//        tableView.isHidden = config == .all  //必要ないかと。
         
-        guard config == .all else { return }
-        tableView.isHidden = true    //Equatableプロトコルのおかげで等式が使える。
+        guard config == .all else { return } //Equatableプロトコルのおかげで等式が使える。
+        tableView.isHidden = true
         view.addSubview(collectionView)
         collectionView.fillSuperview()
     }
     
-    func configureSearchController() {
+    private func configureSearchController() {
         searchController.searchResultsUpdater = self  //デリゲートの設定のようなもの。UISearchResultsUpdatingプロトコル。検索ロジック。
         searchController.searchBar.delegate = self   //ボタンの表示非表示などに対応する。UISearchBarDelegateプロトコル。
         searchController.searchBar.placeholder = "Search with hashtag, name, or email"
@@ -152,15 +151,15 @@ class SearchController: UIViewController {
     
     //MARK: - Actions
     
-    @objc func tableViewTouched(){
+    @objc private func tableViewTouched(){
         searchController.searchBar.resignFirstResponder()
     }
     
-    @objc func refreshTableView(){
+    @objc private func refreshTableView(){
         fetchUsers()
     }
     
-    @objc func refreshCollectionView(){
+    @objc private func refreshCollectionView(){
         fetchPosts()
     }
     
@@ -168,7 +167,6 @@ class SearchController: UIViewController {
     // MARK: - API
     
     func fetchUsers() {   //configによって内容は変わるが、全てのcaseでそれぞれ違う種類の[User]が返される。
-        
         UserService.fetchUsers(forConfig: config) { (result) in
             switch result{
             case .failure(let error):
@@ -201,64 +199,109 @@ class SearchController: UIViewController {
 
 // MARK: - UISearchResultsUpdating
 
-extension SearchController: UISearchResultsUpdating {  //search機能は.allの時のみ。それ以外のモードではこのメソッドは使わない。
+extension SearchController: UISearchResultsUpdating {  //search機能は.allの時のみ。それ以外のモード下ではこのメソッドは使わない。
     
     //searchBarがfirstResponderになった時と、毎回文字が入力された時に呼ばれる。つまりインクリメンタルサーチができる。
     func updateSearchResults(for searchController: UISearchController) {
+        let inputText = searchController.searchBar.text
+        switch SearchLogicService.searchLogicSwitcher(
+            inSearchMode: inSearchMode, searchControllerIsActive: searchController.isActive, inputText: inputText){
         
-        if !inSearchMode{
-            if !searchController.isActive{  //firstResponderになっていない時。つまり.allの初期画面かcancelボタンを押した直後。→Post表示。
-                tableView.isHidden = true
-                collectionView.isHidden = false
-                collectionView.reloadData()  //viewDidLoadで予めDLした全ポスト検索のデータをリロードするだけ。
-                print("POST 表示")
-            }else{                          //firstResponderになっている時で、かつ文字がスペースのみ(空文字)の時。→全ユーザー表示
-                tableView.isHidden = false
-                collectionView.isHidden = true
-                tableView.reloadData()      //viewDidLoadで予めDLした全ユーザー検索のデータをリロードするだけ。
-                print("空文字の時")
+        case .allPosts:
+            tableView.isHidden = true
+            collectionView.isHidden = false
+            collectionView.reloadData()  //viewDidLoadで予めDLした全ポスト検索のデータをリロードするだけ。
+            print("非アクティブ時: 全POST表示")
+        case .allUsers:
+            tableView.isHidden = false
+            collectionView.isHidden = true
+            tableView.reloadData()      //viewDidLoadで予めDLした全ユーザー検索のデータをリロードするだけ。
+            print("空白文字の時:　全USER表示")
+        case .fullnameUsername(let text):
+            collectionView.isHidden = true
+            tableView.isHidden = false
+            searchWithName(text: text.lowercased())
+            print("文字数が１文字のみの時、または通常名前検索モード: fullname/username両方からの検索結果")
+        case .email(let detectedEmail):
+            collectionView.isHidden = true
+            tableView.isHidden = false
+            searchWithEmail(text: detectedEmail)
+            print("email検出!: email検索結果")
+        case .hashtag(let detectedHashtag):
+            collectionView.isHidden = false
+            tableView.isHidden = true
+            PostService.fetchPosts(forHashtag: detectedHashtag) { (posts) in
+                self.filteredPosts = posts
+                print(self.filteredPosts)
+                self.collectionView.reloadData()
             }
+            print("hashtag検出!: APIアクセスしたhashtag検索結果")
+        case .mentions(let detectedMention):
+            collectionView.isHidden = true
+            tableView.isHidden = false
+            searchWithMention(text: detectedMention)
+            print("mention検出!: usernameからの検索結果")
+        case .searchTextIsNil:
+            break
         }
         
-        if inSearchMode{    //以下は実際に文字が打ち込まれてサーチ状態になっている時。
-            
-            guard let rawText = searchController.searchBar.text else { return }
-            let text = rawText.trimmingCharacters(in: .whitespaces)
-            
-            if text.count < 2{    //ここはつまりは一文字のみが打ち込まれている場合。フルネームとユーザーネーム両方から検索
-                collectionView.isHidden = true
-                tableView.isHidden = false
-                searchWithName(text: text.lowercased())
-                print("count<2")
-                return
-            }
-            
-            if let detectedEmail = text.resolveEmails(){  //emailから検索。
-                collectionView.isHidden = true
-                tableView.isHidden = false
-                searchWithEmail(text: detectedEmail)
-                
-            }else if let detectedHashtag = text.resolveHashtags(){  //ここのみAPIを使う。
-                collectionView.isHidden = false
-                tableView.isHidden = true
-                PostService.fetchPosts(forHashtag: detectedHashtag) { (posts) in
-                    self.filteredPosts = posts
-                    print(self.filteredPosts)
-                    self.collectionView.reloadData()
-                }
-                
-            }else if let detectedMention = text.resolveMentions(){  //ユーザーネームからのみ検索
-                collectionView.isHidden = true
-                tableView.isHidden = false
-                searchWithMention(text: detectedMention)
-                
-            }else{  //フルネームとユーザーネーム両方から検索
-                collectionView.isHidden = true
-                tableView.isHidden = false
-                searchWithName(text: text.lowercased())
-                print("通常のfullname & username 検索")
-            }
-        }
+//
+//        if !inSearchMode{
+//            if !searchController.isActive{  //firstResponderになっていない時。つまり.allの初期画面かcancelボタンを押した直後。→Post表示。
+//                tableView.isHidden = true
+//                collectionView.isHidden = false
+//                collectionView.reloadData()  //viewDidLoadで予めDLした全ポスト検索のデータをリロードするだけ。
+//                print("非アクティブ時: 全POST表示")
+//            }else{                          //firstResponderになっている時で、かつ文字がスペースのみ(空文字)の時。→全ユーザー表示
+//                tableView.isHidden = false
+//                collectionView.isHidden = true
+//                tableView.reloadData()      //viewDidLoadで予めDLした全ユーザー検索のデータをリロードするだけ。
+//                print("空白文字の時:　全USER表示")
+//            }
+//        }
+//
+//        if inSearchMode{    //以下は実際に文字が打ち込まれてサーチ状態になっている時。
+//
+//            guard let rawText = searchController.searchBar.text else { return }
+//            let text = rawText.trimmingCharacters(in: .whitespaces)
+//
+//            if text.count < 2{    //ここはつまりは一文字のみが打ち込まれている場合。フルネームとユーザーネーム両方から検索
+//                collectionView.isHidden = true
+//                tableView.isHidden = false
+//                searchWithName(text: text.lowercased())
+//                print("文字数が１文字のみの時: fullname/username両方からの検索結果")
+//                return
+//            }
+//
+//            if let detectedEmail = text.resolveEmails(){  //emailから検索。
+//                collectionView.isHidden = true
+//                tableView.isHidden = false
+//                searchWithEmail(text: detectedEmail)
+//                print("email検出!: email検索結果")
+//
+//            }else if let detectedHashtag = text.resolveHashtags(){  //ここのみAPIを使う。
+//                collectionView.isHidden = false
+//                tableView.isHidden = true
+//                PostService.fetchPosts(forHashtag: detectedHashtag) { (posts) in
+//                    self.filteredPosts = posts
+//                    print(self.filteredPosts)
+//                    self.collectionView.reloadData()
+//                }
+//                print("hashtag検出!: APIアクセスしたhashtag検索結果")
+//
+//            }else if let detectedMention = text.resolveMentions(){  //ユーザーネームからのみ検索
+//                collectionView.isHidden = true
+//                tableView.isHidden = false
+//                searchWithMention(text: detectedMention)
+//                print("mention検出!: usernameからの検索結果")
+//
+//            }else{  //フルネームとユーザーネーム両方から検索
+//                collectionView.isHidden = true
+//                tableView.isHidden = false
+//                searchWithName(text: text.lowercased())
+//                print("全てのケース以外: fullname&username検索結果")
+//            }
+//        }
     }
     
     func searchWithName(text: String){    //フルネームとユーザーネーム両方から検索
@@ -313,7 +356,6 @@ extension SearchController: UITableViewDataSource {  //searchModeがtrue/false�
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifier, for: indexPath) as! UserCell
         cell.delegate = self   //profilePicture, name, fullnameをタップした時にprofileControllerを表示させる為。
-//        cell.selectionStyle = .none //なくても良いよう。
         let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
         cell.viewModel = UserCellViewModel(user: user)
         
@@ -377,21 +419,18 @@ extension SearchController: UICollectionViewDelegate { //.allの時にPostタッ
     }
 }
 
-
-
-
 extension SearchController: UserCellDelegate{
     
-    //tableViewのcellをタップしたときは、.messageの場合のみチャットスタート、それ以外はProfileControllerがpushされる
+    //tableViewのcellの中の名前や写真をタップしたときは、.messageの場合のみチャットスタート、それ以外はProfileControllerがpushされる
     func userCell(_ cell: UserCell, wantsToShowUserProfile user: User) {
         guard let indexPath = tableView.indexPath(for: cell) else{ return }
         guard let currentUid = Auth.auth().currentUser?.uid else { return }
         
-        if config == .messages(currentUid){  //uidは以下では使っていないが、これが正しくないと実行されない。
+        if config == .messages(currentUid){  //ConversationsControllerを起点としてchatページを。
             delegate?.controller(self, wantsToStartChatWith: users[indexPath.row])  //ConversationsControllerがdelegate
         } else {
             let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
-            if let delegate = delegate{  //tabBar以外からの表示の場合。
+            if let delegate = delegate{  //tabBar以外からの表示の場合。presentしていたので、それを閉じて元となるコントローラを起点として。
                 delegate.controller(self, wantsToShowSelectedUser: user)
             }else{   //tabBarからの表示の場合
                 let vc = ProfileController(user: user)

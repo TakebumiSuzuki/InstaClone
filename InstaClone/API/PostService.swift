@@ -108,11 +108,9 @@ class PostService {
     static func fetchPosts(forHashtag hashtag: String, completion: @escaping ([Post]) -> Void) {
         var posts = [Post]()
         COLLECTION_POSTS.whereField("hashtags", arrayContains: hashtag).getDocuments { (snapshot, error) in
-            if let error = error {
-                print("DEBUG: Error fetching hashtag posts: \(error.localizedDescription)")
-            }
+            if let error = error { print("DEBUG: Error fetching hashtag posts: \(error.localizedDescription)") }
             guard let documents = snapshot?.documents else{ return }
-            posts = []
+            
             documents.forEach { (document) in
                 posts.append(Post(dictionary: document.data()))
             }
@@ -183,7 +181,7 @@ class PostService {
         if isFirstFetch == true{
             ref = COLLECTION_USERS.document(uid).collection("user-feed").order(by: "timestamp", descending: true).limit(to: 3)
         }else{
-            //ここをはしょってref.star()という風に書くと機能しない。
+            //ここをはしょってref.start()という風に書くと機能しない。
             guard let lastDocument = PostService.lastPostDoc else{return}
             ref = COLLECTION_USERS.document(uid).collection("user-feed").order(by: "timestamp", descending: true).limit(to: 3).start(afterDocument: lastDocument)
         }
