@@ -111,7 +111,8 @@ class SearchController: UIViewController {
         fetchUsers()
         if config == .all{
             configureSearchController()
-            fetchPosts()
+            PostService.lastDLDoc = nil   //安全のためにpaginationのしおりを初期化しておく
+            fetchPosts(isFirstFetch: true)
         }
     }
    
@@ -160,7 +161,8 @@ class SearchController: UIViewController {
     }
     
     @objc private func refreshCollectionView(){
-        fetchPosts()
+        PostService.lastDLDoc = nil   //安全のためにpaginationのしおりを初期化しておく
+        fetchPosts(isFirstFetch: true)
     }
     
     
@@ -181,16 +183,23 @@ class SearchController: UIViewController {
         }
     }
     
-    func fetchPosts() {   //.allの時のみこれが起動。全ユーザーからの全投稿を時系列で取り出し表示する
-        PostService.fetchPosts { result in
+    func fetchPosts(isFirstFetch: Bool) {   //.allの時のみこれが起動。全ユーザーからの全投稿を時系列で取り出し表示する
+        
+        PostService.fetchPosts(isFirstFetch: isFirstFetch) { (result) in
             switch result{
             case .failure(let error):
                 self.refresherCV.endRefreshing()
-                print("DEBUG: Error fetching all posts: \(error.localizedDescription)")
+                self.showLoader(false)
+                print("DEBUG: Error fetching paginating posts: \(error.localizedDescription)")
                 self.showSimpleAlert(title: "Couln't download posts.Try again later.", message: "", actionTitle: "ok")
+                
             case .success(let posts):
                 self.refresherCV.endRefreshing()
-                self.posts = posts
+                self.showLoader(false)
+                if isFirstFetch{
+                    self.posts = []
+                }
+                self.posts.append(contentsOf: posts)
                 self.collectionView.reloadData()
             }
         }
@@ -411,11 +420,12 @@ extension SearchController: UICollectionViewDelegate { //.allの時にPostタッ
     }
     
     func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
-        print(collectionView.contentSize.height)
-        print(collectionView.contentOffset.y)
-//        if collectionView.contentOffset.y + view.frame.size.height - 100 > collectionView.contentSize.height{
-//            fetchPosts(isFirstFetch: false)
-//        }
+        guard let tabBarHeight = tabBarController?.tabBar.frame.height else{ return }  //optionalを取るためにこの一行はどうしても必要。
+        
+        if collectionView.contentOffset.y > collectionView.contentSize.height - view.frame.size.height + tabBarHeight + 30{
+            showLoader(true)
+            fetchPosts(isFirstFetch: false)
+        }
     }
 }
 

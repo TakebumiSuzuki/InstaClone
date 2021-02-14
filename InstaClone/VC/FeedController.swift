@@ -110,11 +110,13 @@ class FeedController: UICollectionViewController {
             switch result{
             case .failure(let error):
                 self.refresher.endRefreshing()
+                self.showLoader(false)
                 print("DEBUG: Failed to fetch posts: \(error)")
                 self.showSimpleAlert(title: "Failed to download feed. Try again later.", message: "", actionTitle: "ok")
                 
             case .success(let posts):   //paginationによる差分のみが上がってくる。
                 self.refresher.endRefreshing()
+                self.showLoader(false)
                 if isFirstFetch{
                     self.posts = []
                 }
@@ -425,7 +427,9 @@ extension FeedController{    //pagination起動時の挙動。UICollectionViewDe
     override func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
         guard post == nil else{ return }    //単体ポストの場合はreturnされpagination手続きは実行されない。
         
-        if collectionView.contentOffset.y + view.frame.size.height - 100 > collectionView.contentSize.height{
+        guard let tabBarHeight = tabBarController?.tabBar.frame.height else{ return }
+        if collectionView.contentOffset.y > collectionView.contentSize.height - view.frame.size.height + tabBarHeight + 30{
+            showLoader(true)
             fetchPosts(isFirstFetch: false)
         }
     }
@@ -470,12 +474,14 @@ extension FeedController {
     func handleURLTapped(forCell cell: FeedCell) {
         cell.captionLabel.handleURLTap { (url) in
             var urlString = url.absoluteString
-            if !(["http", "https"].contains(urlString.lowercased())) {
+            if !(urlString.lowercased().contains("http://") || urlString.lowercased().contains("https://")) {
                 urlString = "http://\(urlString)"
+                print("hit")
             }
             guard let appendedUrl = URL(string: urlString) else{return}
             let vc = SFSafariViewController(url: appendedUrl)
             self.present(vc, animated: true, completion: nil)
+            
         }
     }
 }

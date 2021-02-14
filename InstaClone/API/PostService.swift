@@ -68,10 +68,25 @@ class PostService {
     }
     
     //searchControllerから。全ポスト取得。--------------------------------------------------------------------------------------
-    static func fetchPosts(completion: @escaping (Result<[Post], Error>) -> Void) {
-        COLLECTION_POSTS.order(by: "timestamp", descending: true).getDocuments { (snapshot, error) in
+    static var lastDLDoc: DocumentSnapshot?
+    
+    static func fetchPosts(isFirstFetch: Bool, completion: @escaping (Result<[Post], Error>) -> Void) {
+        
+        let query: Query
+        if isFirstFetch{
+            query = COLLECTION_POSTS.order(by: "timestamp", descending: true).limit(to: 18)
+        }else{
+            //ここでreturnになるのは一番下の最終ポストまで行き着いた後の時。この時、lastDLDocはnilになるので。空の配列をcompに送る(loaderのフリーズ対策)
+            guard let lastDLDoc = PostService.lastDLDoc else{ completion(.success([Post]())); return }
+            query = COLLECTION_POSTS.order(by: "timestamp", descending: true).limit(to: 18).start(afterDocument: lastDLDoc)
+        }
+        
+        query.getDocuments { (snapshot, error) in
             if let error = error{ completion(.failure(error)); return }
             guard let documents = snapshot?.documents else { completion(.failure(CustomError.snapShotIsNill)); return }
+            
+            print("SearchController:今回のPaginationDL数は:\(documents.count)")
+            lastDLDoc = documents.last  //一番下の最終ポストまで行き着いた後には空の配列のlastという事でnilになる模様。
             
             let posts = documents.map({ Post(dictionary: $0.data()) })
             completion(.success(posts))
@@ -177,20 +192,21 @@ class PostService {
         guard let uid = Auth.auth().currentUser?.uid else {completion(.failure(CustomError.currentUserNil));return }
         var posts = [Post]()
         
-        var ref: Query
+        var query: Query
         if isFirstFetch == true{
-            ref = COLLECTION_USERS.document(uid).collection("user-feed").order(by: "timestamp", descending: true).limit(to: 3)
+            query = COLLECTION_USERS.document(uid).collection("user-feed").order(by: "timestamp", descending: true).limit(to: 3)
         }else{
+            //一番下の最後まで行ってさらにfetchしようとするとsnapshot.documents.lastがnilになるようなので、その場合はここでreturnさせる(loaderフリーズ対策)
+            guard let lastDocument = PostService.lastPostDoc else{completion(.success([Post]())); return}
             //ここをはしょってref.start()という風に書くと機能しない。
-            guard let lastDocument = PostService.lastPostDoc else{return}
-            ref = COLLECTION_USERS.document(uid).collection("user-feed").order(by: "timestamp", descending: true).limit(to: 3).start(afterDocument: lastDocument)
+            query = COLLECTION_USERS.document(uid).collection("user-feed").order(by: "timestamp", descending: true).limit(to: 3).start(afterDocument: lastDocument)
         }
         
-        ref.getDocuments { snapshot, error in
+        query.getDocuments { snapshot, error in
             if let error = error{ completion(.failure(error)); return }
             guard let snapshot = snapshot else { completion(.failure(CustomError.snapShotIsNill)); return }
             
-            print("PaginationでDLしたスナップショットの数は\(snapshot.documents.count)です。")
+            print("FeedController:今回のPaginationDL数は:\(snapshot.documents.count)")
             PostService.lastPostDoc = snapshot.documents.last
             
             let group = DispatchGroup()
