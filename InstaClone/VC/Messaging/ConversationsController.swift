@@ -18,6 +18,13 @@ class ConversationsController: UIViewController {
     private var messages = [Message]()
     private var conversationsDictionary = [String: Message]()
     private let messagingService = MessagingService()
+    private let noConversationLabel: UILabel = {
+        let label = UILabel()
+        label.isHidden = true
+        label.textColor = .systemGray
+        label.text = "There is no conversations yet."
+        return label
+    }()
     
     // MARK: - Lifecycle
     
@@ -53,6 +60,9 @@ class ConversationsController: UIViewController {
         view.addSubview(tableView)
         tableView.frame = view.frame
         
+        view.addSubview(noConversationLabel)
+        noConversationLabel.center(inView: tableView)
+        
         navigationItem.title = "Messages"
         navigationItem.leftBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .plain,
                                                            target: self, action: #selector(handleDismissal))
@@ -72,7 +82,7 @@ class ConversationsController: UIViewController {
             self.messages = messages
             self.tableView.reloadData()
             if messages.isEmpty == true{
-                self.showSimpleAlert(title: "There isn't any conversation yet. Search and add your friend first!", message: "", actionTitle: "ok")
+                self.noConversationLabel.isHidden = false
             }
         }
     }

@@ -245,12 +245,5 @@ struct UserService {
         COLLECTION_USERS.document(uid).setData(data, merge: true, completion: completion)
     }
     
-    
-//    static func setUserFCMToken() {
-//        guard let uid = Auth.auth().currentUser?.uid else { return }
-//        guard let fcmToken = Messaging.messaging().fcmToken else { return }
-//
-//        COLLECTION_USERS.document(uid).updateData(["fcmToken": fcmToken])
-//    }
 }
 

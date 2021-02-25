@@ -53,9 +53,6 @@ struct AuthService {
                                        "uid": uid,
                                        "username": credentials.username]
             
-//            if let fcmToken = Messaging.messaging().fcmToken {
-//                data["fcmToken"] = fcmToken
-//            }
             COLLECTION_USERS.document(uid).setData(data) { (error) in
                 if let error = error{
                     print("DEBUG: Failed to save user data to Firestore: \(error.localizedDescription)")

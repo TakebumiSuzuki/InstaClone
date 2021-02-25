@@ -17,7 +17,7 @@ class UserServiceTests: XCTestCase {
     func test_fetchUserメソッド_実在するuidを使ってfetchした時(){
         let expect = expectation(description: "Fetching User object")
         
-        UserService.fetchUser(withUid: "P0d0M2VtSuYebyeYXJ3NEFrHWCD2") { (result) in //kirinのuidを使って調べる。
+        UserService.fetchUser(withUid: "LhFQHjwPotZXvF8NL7xX0ZHf15r2") { (result) in //kirinのuidを使って調べる。
             switch result{
             case .failure(let error):
                 XCTFail("Error: \(error.localizedDescription)")
